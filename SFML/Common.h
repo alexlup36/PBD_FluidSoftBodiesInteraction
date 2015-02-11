@@ -35,4 +35,7 @@ const bool GRAVITY_ON = true;
 // Physics constants
 const float VELOCITY_DAMPING		= 0.99999f;
 
+// Solver iterations
+const int SOLVER_ITERATIONS = 3;
+
 #endif // COMMON_H

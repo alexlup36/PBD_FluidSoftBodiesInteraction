@@ -9,21 +9,27 @@ public:
 	Particle(const sf::Vector2f& position, float radius);
 	~Particle();
 
-	void Update(float dt);
 	void Draw(sf::RenderWindow& window);
+	void UpdateShapePosition();
 
 	// Getters and setters
 	inline void SetPosition(const sf::Vector2f& newPosition) { m_Position = newPosition; }
+	inline void AddDeltaPosition(const sf::Vector2f& deltaPosition) { m_Position += deltaPosition; }
 	inline const sf::Vector2f GetPosition() const { return m_Position; }
 
 	inline void SetPredictedPosition(const sf::Vector2f& newPredPos) { m_PredictedPosition = newPredPos; }
+	inline void AddDeltaPredPosition(const sf::Vector2f& deltaPredPosition) { m_PredictedPosition += deltaPredPosition; }
 	inline const sf::Vector2f GetPredictedPosition() const { return m_PredictedPosition; }
+
+	inline const sf::Vector2f GetLocalPosition() const { return m_LocalPosition; }
+	inline void SetLocalPosition(const sf::Vector2f& newLocalPosition) { m_LocalPosition = newLocalPosition; }
 	
 	inline void SetVelocity(const sf::Vector2f& newVelocity) { m_Velocity = newVelocity; }
+	inline void AddDeltaVelocity(const sf::Vector2f& deltaVelocity) { m_Velocity += deltaVelocity; }
 	inline sf::Vector2f GetVelocity() const { return m_Velocity; }
 
 	inline void SetForce(const sf::Vector2f& newForce) { m_Force = newForce; }
-	inline sf::Vector2f GetForce() const { m_Force; }
+	inline sf::Vector2f GetForce() const { return m_Force; }
 
 	inline float GetRadius() const { return m_fRadius; }
 
@@ -66,17 +72,13 @@ private:
 	sf::CircleShape m_Shape;
 	float m_fRadius;
 
+	sf::Vector2f m_LocalPosition;
 	sf::Vector2f m_Position;
 	sf::Vector2f m_PredictedPosition;
 	sf::Vector2f m_Velocity;
 	sf::Vector2f m_Force;
 	float m_fMass;
 	float m_fInvMass;
-
-	void UpdateExternalForces(float dt);
-	void DampVelocity();
-	void CalculatePredictedPosition(float dt);
-	void UpdateActualPosAndVelocity();
 };
 
 #endif // PARTICLE_H

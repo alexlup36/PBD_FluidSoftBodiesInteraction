@@ -14,6 +14,7 @@ int main()
 	sf::Vector2i fullscreenResolution = sf::Vector2i(1920, 1080);
 
 	sf::RenderWindow window(sf::VideoMode(windowResolution.x, windowResolution.y), "SFML window");
+	//window.setFramerateLimit(60);
 	sf::Color clearColor = sf::Color::Black;
 
 	// ---------------------------------------------------------------------------
@@ -45,7 +46,7 @@ int main()
 	// ---------------------------------------------------------------------------
 	// Application
 	std::shared_ptr<Application> testApp = std::make_shared<Application>();
-	testApp->Initialize();
+	testApp->Initialize(window);
 	testApp->BuildParticleSystem(PARTICLE_COUNT);
 
 	// ---------------------------------------------------------------------------
@@ -88,6 +89,11 @@ int main()
 									sf::Style::Fullscreen);
 								bIsFullScreen = true;
 							}
+							break;
+						}
+						case sf::Keyboard::Escape:
+						{
+							window.close();
 							break;
 						}
 						default:
