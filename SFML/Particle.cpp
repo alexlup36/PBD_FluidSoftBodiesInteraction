@@ -10,7 +10,7 @@ Particle::Particle(const sf::Vector2f& position, float radius)
 	m_Shape.setRadius(radius);
 	m_Shape.setOutlineColor(sf::Color::Red);
 	m_Shape.setOutlineThickness(1.0f);
-	m_Shape.setFillColor(sf::Color::Green);
+	SetDefaultColor();
 
 	sf::FloatRect rect = m_Shape.getLocalBounds();
 	m_Shape.setOrigin(rect.width / 2.0f, rect.height / 2.0f);

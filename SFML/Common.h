@@ -30,7 +30,7 @@ const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS - 1.0f;
 
 // Forces
 const sf::Vector2f GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
-const bool GRAVITY_ON = true;
+const bool GRAVITY_ON = false;
 
 // Physics constants
 const float VELOCITY_DAMPING		= 0.99999f;

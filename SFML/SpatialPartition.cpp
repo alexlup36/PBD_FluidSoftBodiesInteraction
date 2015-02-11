@@ -97,9 +97,12 @@ std::vector<Particle*> SpatialPartition::GetNeighbors(const Particle& particle)
 
 	for each (int id in cellIDsList)
 	{
-		for each (Particle* particle in m_Buckets[id])
+		for each (Particle* pParticle in m_Buckets[id])
 		{
-			nearbyParticleList.push_back(particle);
+			if (pParticle->GetParticleIndex() != particle.GetParticleIndex())
+			{
+				nearbyParticleList.push_back(pParticle);
+			}
 		}
 	}
 

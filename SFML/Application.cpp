@@ -24,21 +24,12 @@ void Application::Initialize(sf::RenderWindow& window)
 	// Spatial partition
 
 	m_SpatialManager.Setup();
-
-	// Draw container
-	DrawContainer(window);
 }
 
 void Application::Update(float dt)
 {
 	// Reset the spatial manager
 	m_SpatialManager.ClearBuckets();
-
-	for (int index = 0; index < PARTICLE_COUNT; index++)
-	{
-		// Repopulate the spatial manager with the particles
-		m_SpatialManager.RegisterObject(&m_ParticleList[index]);
-	}
 
 	UpdateExternalForces(dt);
 	DampVelocities();
@@ -49,6 +40,38 @@ void Application::Update(float dt)
 
 	// Update the actual position and velocity of the particle
 	UpdateActualPosAndVelocities();
+
+
+	for (int index = 0; index < PARTICLE_COUNT; index++)
+	{
+		// Repopulate the spatial manager with the particles
+		m_SpatialManager.RegisterObject(&m_ParticleList[index]);
+	}
+
+	// Collision with other particles
+	for (int index = 0; index < PARTICLE_COUNT; index++)
+	{
+		// Get the neighbors of the current particle
+		std::vector<Particle*> neighborList = m_SpatialManager.GetNeighbors(m_ParticleList[index]);
+
+		// If there are no neighbors set the color to default
+		if (neighborList.size() == 0)
+		{
+			m_ParticleList[index].SetDefaultColor();
+		}
+		else
+		{
+			m_ParticleList[index].SetAsNeighborColor();
+		}
+
+		for each (Particle* particle in neighborList)
+		{
+			// Mark the particle as a neighbor
+			particle->SetAsNeighborColor();
+		}
+
+		
+	}
 
 	//// Collision with other particles
 	//for (int index = 0; index < PARTICLE_COUNT; index++)
@@ -133,6 +156,9 @@ void Application::Update(float dt)
 
 void Application::Draw(sf::RenderWindow& window)
 {
+	// Draw container
+	DrawContainer(window);
+
 	// Draw particles
 	for (int index = 0; index < PARTICLE_COUNT; index++)
 	{
@@ -140,10 +166,10 @@ void Application::Draw(sf::RenderWindow& window)
 	}
 }
 
-sf::Vector2f Application::GetRandomPosWithinLimits(float fRadius)
+sf::Vector2f Application::GetRandomPosWithinLimits()
 {
-	int iXPosition = rand() % (int)(PARTICLE_RIGHTLIMIT - PARTICLE_LEFTLIMIT + PARTICLE_LEFTLIMIT);
-	int iYPosition = rand() % (int)(PARTICLE_BOTTOMLIMIT - PARTICLE_TOPLIMIT + PARTICLE_TOPLIMIT);
+	int iXPosition = rand() % (int)(PARTICLE_RIGHTLIMIT - PARTICLE_LEFTLIMIT) + (int)PARTICLE_LEFTLIMIT;
+	int iYPosition = rand() % (int)(PARTICLE_BOTTOMLIMIT - PARTICLE_TOPLIMIT) + (int)PARTICLE_TOPLIMIT;
 
 	return sf::Vector2f((float)iXPosition, (float)iYPosition);
 }
@@ -152,7 +178,7 @@ void Application::BuildParticleSystem(int iParticleCount)
 {
 	for (int index = 0; index < PARTICLE_COUNT; index++)
 	{
-		std::shared_ptr<Particle> particle = std::make_shared<Particle>(GetRandomPosWithinLimits(PARTICLE_RADIUS), PARTICLE_RADIUS);
+		std::shared_ptr<Particle> particle = std::make_shared<Particle>(GetRandomPosWithinLimits(), PARTICLE_RADIUS);
 
 		// Build particle list
 		m_ParticleList.push_back(*particle);

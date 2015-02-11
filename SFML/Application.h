@@ -20,7 +20,7 @@ public:
 
 	void BuildParticleSystem(int iParticleCount);
 
-	sf::Vector2f GetRandomPosWithinLimits(float fRadius);
+	sf::Vector2f GetRandomPosWithinLimits();
 
 private:
 	sf::Texture m_Texture;

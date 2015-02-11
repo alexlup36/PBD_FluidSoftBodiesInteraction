@@ -52,8 +52,9 @@ public:
 		return radiusSum * radiusSum > (fDx * fDx) + (fDy * fDy);
 	}
 
-	inline void SetIsColliding() { m_Shape.setFillColor(sf::Color::Red); }
-	inline void SetAsNeighbor() { m_Shape.setFillColor(sf::Color::Magenta); }
+	inline void SetDefaultColor() { m_Shape.setFillColor(sf::Color::Green); }
+	inline void SetIsCollidingColor() { m_Shape.setFillColor(sf::Color::Red); }
+	inline void SetAsNeighborColor() { m_Shape.setFillColor(sf::Color::Magenta); }
 
 	inline int GetParticleIndex() const { return m_iParticleIndex; }
 
