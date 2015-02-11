@@ -15,8 +15,8 @@ Particle::Particle(const sf::Vector2f& position, float radius)
 	sf::FloatRect rect = m_Shape.getLocalBounds();
 	m_Shape.setOrigin(rect.width / 2.0f, rect.height / 2.0f);
 
-	m_Position	= sf::Vector2f(position.x, position.y);
-	m_LocalPosition = sf::Vector2f(m_Position.x - WALL_LEFTLIMIT, m_Position.y - WALL_TOPLIMIT);
+	m_Position				= sf::Vector2f(position.x, position.y);
+	m_PredictedPosition		= m_Position;
 
 	float fVelX = (float)(rand() % 200 - 100);
 	float fVelY = (float)(rand() % 200 - 100);
@@ -46,28 +46,28 @@ void Particle::Update(float dt)
 	// Update the position of the shape
 	m_Shape.setPosition(m_Position);
 
-	// Wall collision -> change the direction of the velocity
-	if (IsAtLimit())
-	{
-		// Collision left or right limit
-		if (m_bLeft || m_bRight)
-		{
-			m_Velocity.x = -m_Velocity.x;
-		}
+	//// Wall collision -> change the direction of the velocity
+	//if (IsAtLimit())
+	//{
+	//	// Collision left or right limit
+	//	if (m_bLeft || m_bRight)
+	//	{
+	//		m_Velocity.x = -m_Velocity.x;
+	//	}
 
-		// Collision top or bottom limit
-		if (m_bTop || m_bBottom)
-		{
-			m_Velocity.y = -m_Velocity.y;
-		}
+	//	// Collision top or bottom limit
+	//	if (m_bTop || m_bBottom)
+	//	{
+	//		m_Velocity.y = -m_Velocity.y;
+	//	}
 
-		// Change the color of the particle
-		m_Shape.setFillColor(sf::Color::Blue);
-	}
-	else
-	{
-		m_Shape.setFillColor(sf::Color::Green);
-	}
+	//	// Change the color of the particle
+	//	m_Shape.setFillColor(sf::Color::Blue);
+	//}
+	//else
+	//{
+	//	m_Shape.setFillColor(sf::Color::Green);
+	//}
 }
 
 void Particle::Draw(sf::RenderWindow& window)
@@ -99,13 +99,16 @@ void Particle::DampVelocity()
 void Particle::CalculatePredictedPosition(float dt)
 {
 	// Update position
-	m_Position.x += dt * m_Velocity.x;
-	m_Position.y += dt * m_Velocity.y;
+	m_PredictedPosition.x += dt * m_Velocity.x;
+	m_PredictedPosition.y += dt * m_Velocity.y;
 
 	// Clamp the position to the particle limits
-	m_Position.x = std::max(PARTICLE_LEFTLIMIT, std::min(m_Position.x, PARTICLE_RIGHTLIMIT));
-	m_Position.y = std::max(PARTICLE_TOPLIMIT, std::min(m_Position.y, PARTICLE_BOTTOMLIMIT));
-
-	// Update local position
-	m_LocalPosition = sf::Vector2f(m_Position.x - WALL_LEFTLIMIT, m_Position.y - WALL_TOPLIMIT);
+	m_PredictedPosition.x = std::max(PARTICLE_LEFTLIMIT, std::min(m_PredictedPosition.x, PARTICLE_RIGHTLIMIT));
+	m_PredictedPosition.y = std::max(PARTICLE_TOPLIMIT, std::min(m_PredictedPosition.y, PARTICLE_BOTTOMLIMIT));
 }
+
+void Particle::UpdateActualPosAndVelocity()
+{
+
+}
+

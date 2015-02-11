@@ -16,7 +16,8 @@ public:
 	inline void SetPosition(const sf::Vector2f& newPosition) { m_Position = newPosition; }
 	inline const sf::Vector2f GetPosition() const { return m_Position; }
 
-	inline sf::Vector2f GetLocalPosition() const { return m_LocalPosition; }
+	inline void SetPredictedPosition(const sf::Vector2f& newPredPos) { m_PredictedPosition = newPredPos; }
+	inline const sf::Vector2f GetPredictedPosition() const { return m_PredictedPosition; }
 	
 	inline void SetVelocity(const sf::Vector2f& newVelocity) { m_Velocity = newVelocity; }
 	inline sf::Vector2f GetVelocity() const { return m_Velocity; }
@@ -66,7 +67,6 @@ private:
 	float m_fRadius;
 
 	sf::Vector2f m_Position;
-	sf::Vector2f m_LocalPosition;
 	sf::Vector2f m_PredictedPosition;
 	sf::Vector2f m_Velocity;
 	sf::Vector2f m_Force;
@@ -76,6 +76,7 @@ private:
 	void UpdateExternalForces(float dt);
 	void DampVelocity();
 	void CalculatePredictedPosition(float dt);
+	void UpdateActualPosAndVelocity();
 };
 
 #endif // PARTICLE_H
