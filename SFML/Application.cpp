@@ -26,27 +26,36 @@ void Application::Initialize(sf::RenderWindow& window)
 	m_SpatialManager.Setup();
 }
 
-void Application::Update(float dt)
+void Application::Update(sf::RenderWindow& window, float dt)
 {
 	// Reset the spatial manager
 	m_SpatialManager.ClearBuckets();
 
 	UpdateExternalForces(dt);
 	DampVelocities();
-	CalculatePredictedPositions(dt);
+	CalculatePredictedPositions(window, dt);
+	FindNeighborParticles();
 
 	// Generate external collision constraints
+	GenerateCollisionConstraints(window);
 
+	int iIteration = 0;
+	while (iIteration++ < SOLVER_ITERATIONS)
+	{
+		// For all particles calculate lambda
+
+		// For all particles calculate dp
+
+		// For all particles update the predicted position
+	}
+
+	
 
 	// Update the actual position and velocity of the particle
-	UpdateActualPosAndVelocities();
+	UpdateActualPosAndVelocities(dt);
 
 
-	for (int index = 0; index < PARTICLE_COUNT; index++)
-	{
-		// Repopulate the spatial manager with the particles
-		m_SpatialManager.RegisterObject(&m_ParticleList[index]);
-	}
+
 
 	// Collision with other particles
 	for (int index = 0; index < PARTICLE_COUNT; index++)
@@ -213,20 +222,32 @@ void Application::DampVelocities()
 	}
 }
 
-void Application::CalculatePredictedPositions(float dt)
+void Application::CalculatePredictedPositions(sf::RenderWindow& window, float dt)
 {
 	// Calculate the predicted positions
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
 		// Update position
 		it->AddDeltaPredPosition(dt * it->GetVelocity());
+
+		// Debug
+		sf::Vertex line[] =
+		{
+			sf::Vertex(it->GetPosition()),
+			sf::Vertex(it->GetPredictedPosition())
+		};
+
+		window.draw(line, 2, sf::Lines);
 	}
 }
 
-void Application::UpdateActualPosAndVelocities()
+void Application::UpdateActualPosAndVelocities(float dt)
 {
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
+		// Update velocity based on the distance offset (after correcting the position)
+		//it->SetVelocity(1.0f / dt * (it->GetPredictedPosition() - it->GetPosition()));
+
 		// Update position
 		it->SetPosition(it->GetPredictedPosition());
 
@@ -234,19 +255,42 @@ void Application::UpdateActualPosAndVelocities()
 		sf::Vector2f localOffset(WALL_LEFTLIMIT, WALL_TOPLIMIT);
 		it->SetLocalPosition(it->GetPosition() - localOffset);
 
-		// Update velocity based on the distance offset (after correcting the position)
-		// -----
-
 		// Update the position of the particle shape
 		it->UpdateShapePosition();
 	}
 }
 
-void Application::GenerateCollisionConstraints()
+void Application::GenerateCollisionConstraints(sf::RenderWindow& window)
 {
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
-		// -----
+		if (it->GetPredictedPosition().x < WALL_LEFTLIMIT)
+		{
+			float fIntersectionCoeff = (WALL_LEFTLIMIT - it->GetPosition().x) / (it->GetPredictedPosition().x - it->GetPosition().x);
+			sf::Vector2f intersectionPoint = sf::Vector2f(WALL_LEFTLIMIT, 
+				it->GetPosition().y + fIntersectionCoeff * (it->GetPredictedPosition().y - it->GetPosition().y));
+		}
+
+		if (it->GetPredictedPosition().y < WALL_TOPLIMIT)
+		{
+			float fIntersectionCoeff = (WALL_TOPLIMIT - it->GetPosition().y) / (it->GetPredictedPosition().y - it->GetPosition().y);
+			sf::Vector2f intersectionPoint = sf::Vector2f(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
+				WALL_TOPLIMIT);
+		} 
+
+		if (it->GetPredictedPosition().x > WALL_RIGHTLIMIT)
+		{
+			float fIntersectionCoeff = (WALL_RIGHTLIMIT - it->GetPosition().x) / (it->GetPredictedPosition().x - it->GetPosition().x);
+			sf::Vector2f intersectionPoint = sf::Vector2f(WALL_RIGHTLIMIT,
+				it->GetPosition().y + fIntersectionCoeff * (it->GetPredictedPosition().y - it->GetPosition().y));
+		}
+
+		if (it->GetPredictedPosition().y > WALL_BOTTOMLIMIT)
+		{
+			float fIntersectionCoeff = (WALL_BOTTOMLIMIT - it->GetPosition().y) / (it->GetPredictedPosition().y - it->GetPosition().y);
+			sf::Vector2f intersectionPoint = sf::Vector2f(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
+				WALL_BOTTOMLIMIT);
+		}
 	}
 }
 
@@ -269,4 +313,13 @@ void Application::DrawContainer(sf::RenderWindow& window)
 	};
 
 	window.draw(line, 8, sf::Lines);
+}
+
+void Application::FindNeighborParticles()
+{
+	for (int index = 0; index < PARTICLE_COUNT; index++)
+	{
+		// Repopulate the spatial manager with the particles
+		m_SpatialManager.RegisterObject(&m_ParticleList[index]);
+	}
 }

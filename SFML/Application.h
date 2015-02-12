@@ -15,7 +15,7 @@ public:
 	~Application();
 
 	void Initialize(sf::RenderWindow& window);
-	void Update(float dt);
+	void Update(sf::RenderWindow& window, float dt);
 	void Draw(sf::RenderWindow& window);
 
 	void BuildParticleSystem(int iParticleCount);
@@ -33,9 +33,10 @@ private:
 
 	void UpdateExternalForces(float dt);
 	void DampVelocities();
-	void CalculatePredictedPositions(float dt);
-	void UpdateActualPosAndVelocities();
-	void GenerateCollisionConstraints();
+	void CalculatePredictedPositions(sf::RenderWindow& window, float dt);
+	void FindNeighborParticles();
+	void UpdateActualPosAndVelocities(float dt);
+	void GenerateCollisionConstraints(sf::RenderWindow& window);
 
 	inline float Dot(const sf::Vector2f& v1, const sf::Vector2f& v2) { return v1.x * v2.x + v1.y * v2.y; }
 	inline void PrintVector2(const sf::Vector2f& v) { std::cout << "x = " << v.x << " y = " << v.y << std::endl; }

@@ -156,7 +156,7 @@ int main()
 		currentMousePosition = sf::Mouse::getPosition();
 
 		// Application update 
-		testApp->Update(time.asSeconds());
+		testApp->Update(window, time.asSeconds());
 		testApp->Draw(window);
 
 		std::string fps = "FPS: " + std::to_string(1.0f / time.asSeconds()) + "\n";

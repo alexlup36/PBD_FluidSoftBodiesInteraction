@@ -4,8 +4,8 @@
 #include <SFML/Graphics.hpp>
 #include <math.h>
 
-const int PARTICLE_COUNT = 5;
-const float PARTICLE_RADIUS = 30.0f;
+const int PARTICLE_COUNT = 1000;
+const float PARTICLE_RADIUS = 3.0f;
 
 // Container dimensions
 const float CONTAINER_WIDTH = 1100.0f;
@@ -21,6 +21,12 @@ const float WALL_LEFTLIMIT			= 100.0f;
 const float WALL_RIGHTLIMIT			= WALL_LEFTLIMIT + CELL_COLS * CELL_SIZE;
 const float WALL_TOPLIMIT			= 200.0f;
 const float WALL_BOTTOMLIMIT		= WALL_TOPLIMIT + CELL_ROWS * CELL_SIZE;
+
+// Container corners
+const sf::Vector2f ContainerBottomLeft	= sf::Vector2f(WALL_LEFTLIMIT, WALL_BOTTOMLIMIT);
+const sf::Vector2f ContainerTopLeft		= sf::Vector2f(WALL_LEFTLIMIT, WALL_TOPLIMIT);
+const sf::Vector2f ContainerBottomRight = sf::Vector2f(WALL_RIGHTLIMIT, WALL_BOTTOMLIMIT);
+const sf::Vector2f ContainerTopRight	= sf::Vector2f(WALL_RIGHTLIMIT, WALL_TOPLIMIT);
 
 // Particle limits
 const float PARTICLE_LEFTLIMIT		= WALL_LEFTLIMIT + PARTICLE_RADIUS + 1.0f;
