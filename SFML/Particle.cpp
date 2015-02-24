@@ -4,9 +4,9 @@
 
 int Particle::m_iGlobalIndex = 0;
 
-Particle::Particle(const sf::Vector2f& position, float radius)
+Particle::Particle(const glm::vec2& position, float radius)
 {
-	m_Shape.setPosition(position);
+	m_Shape.setPosition(sf::Vector2<float>(position.x, position.y));
 	m_Shape.setRadius(radius);
 	m_Shape.setOutlineColor(sf::Color::Red);
 	m_Shape.setOutlineThickness(1.0f);
@@ -15,19 +15,19 @@ Particle::Particle(const sf::Vector2f& position, float radius)
 	sf::FloatRect rect = m_Shape.getLocalBounds();
 	m_Shape.setOrigin(rect.width / 2.0f, rect.height / 2.0f);
 
-	m_Position				= sf::Vector2f(position.x, position.y);
-	m_LocalPosition			= sf::Vector2f(m_Position.x - WALL_LEFTLIMIT, m_Position.y - WALL_TOPLIMIT);
+	m_Position				= glm::vec2(position.x, position.y);
+	m_LocalPosition			= glm::vec2(m_Position.x - WALL_LEFTLIMIT, m_Position.y - WALL_TOPLIMIT);
 	m_PredictedPosition		= m_Position;
 
-	float fVelX = 0.0f;// (float)(rand() % 200 - 100);
-	float fVelY = 0.0f;// (float)(rand() % 200 - 100);
-	m_Velocity = sf::Vector2f(fVelX, fVelY);
-	m_Force		= sf::Vector2f(0.0f, 0.0f);
-	m_fMass		= 1.0f;
-	m_fInvMass	= 1.0f / m_fMass;
-	m_fRadius	= radius;
+	float fVelX		= 0.0f;// (float)(rand() % 200 - 100);
+	float fVelY		= 0.0f;// (float)(rand() % 200 - 100);
+	m_Velocity		= glm::vec2(fVelX, fVelY);
+	m_Force			= glm::vec2(0.0f, 0.0f);
+	m_fMass			= 1.0f;
+	m_fInvMass		= 1.0f / m_fMass;
+	m_fRadius		= radius;
 	m_fRestDensity  = WATER_DENSITY;
-	m_fSPHDensity = 0.0f;
+	m_fSPHDensity	= 0.0f;
 
 	// Increment particle index
 	m_iParticleIndex = m_iGlobalIndex++;
@@ -49,5 +49,5 @@ void Particle::Draw(sf::RenderWindow& window)
 void Particle::UpdateShapePosition()
 {
 	// Update the position of the shape
-	m_Shape.setPosition(m_Position);
+	m_Shape.setPosition(sf::Vector2<float>(m_Position.x, m_Position.y));
 }

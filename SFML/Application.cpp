@@ -62,30 +62,30 @@ void Application::Update(sf::RenderWindow& window, float dt)
 			// Gradient for neighbors
 			for (unsigned int j = 0; j < neighbors[i].size(); j++)
 			{
-				sf::Vector2f neighborParticlePosition = neighbors[i][j]->GetPosition();
+				glm::vec2 neighborParticlePosition = neighbors[i][j]->GetPosition();
 
 				// Calculate the vector between the particles
-				sf::Vector2f r = currentParticle.GetPosition() - neighborParticlePosition;
+				glm::vec2 r = currentParticle.GetPosition() - neighborParticlePosition;
 				// Use poly6 smoothing kernel
 				accumulatorDensity += (Poly6(r, SMOOTHING_DISTANCE) * currentParticle.GetParticleMass());
 
 				// Calculate the gradient of the spiky kernel
-				sf::Vector2f spikyGradient = -1.0f / WATER_DENSITY * SpikyGradient(r, SMOOTHING_DISTANCE);
-				float spikyGradientLength = Length(spikyGradient);
+				glm::vec2 spikyGradient = -1.0f / WATER_DENSITY * SpikyGradient(r, SMOOTHING_DISTANCE);
+				float spikyGradientLength = glm::length(spikyGradient);
 				accumulatorGradient += (spikyGradientLength * spikyGradientLength);
 			}
 
 			// Gradient for non-neighbors
-			sf::Vector2f accum = sf::Vector2f(0.0f, 0.0f);
+			glm::vec2 accum = glm::vec2(0.0f, 0.0f);
 			for (unsigned int j = 0; j < neighbors[i].size(); j++)
 			{
 				// Calculate the vector between the particles
-				sf::Vector2f r = currentParticle.GetPosition() - neighbors[i][j]->GetPosition();
+				glm::vec2 r = currentParticle.GetPosition() - neighbors[i][j]->GetPosition();
 
 				accum += SpikyGradient(r, SMOOTHING_DISTANCE);
 			}
-			sf::Vector2f ciGradient = accum * ONE_OVER_WATER_DENSITY;
-			float ciGradientLength = Length(ciGradient);
+			glm::vec2 ciGradient = accum * ONE_OVER_WATER_DENSITY;
+			float ciGradientLength = glm::length(ciGradient);
 			accumulatorGradient += (ciGradientLength * ciGradientLength);
 
 			// Set the new density
@@ -99,13 +99,13 @@ void Application::Update(sf::RenderWindow& window, float dt)
 		// Calculate the delta p for each particle based on the density constraint
 		for (unsigned int i = 0; i < m_ParticleList.size(); i++)
 		{
-			sf::Vector2f accumulatorGradient = sf::Vector2f(0.0f, 0.0f);
+			glm::vec2 accumulatorGradient = glm::vec2(0.0f, 0.0f);
 
 			// Gradient for neighbors
 			for (unsigned int j = 0; j < neighbors[i].size(); j++)
 			{
 				// Calculate the gradient of the spiky kernel
-				sf::Vector2f spikyGradient = SpikyGradient(m_ParticleList[i].GetPosition() - neighbors[i][j]->GetPosition(), 
+				glm::vec2 spikyGradient = SpikyGradient(m_ParticleList[i].GetPosition() - neighbors[i][j]->GetPosition(), 
 					SMOOTHING_DISTANCE);
 				// Accumulate
 
@@ -122,13 +122,15 @@ void Application::Update(sf::RenderWindow& window, float dt)
 		// Update container constraints
 		for each (auto container_constraint in m_ContainerConstraints)
 		{
-			sf::Vector2f particlePredictedPosition = 
+			glm::vec2 particlePredictedPosition = 
 				m_ParticleList[container_constraint.particleIndex].GetPredictedPosition();
 
-			float constraint = Dot(particlePredictedPosition - container_constraint.projectionPoint, container_constraint.normalVector);
-			sf::Vector2f gradientDescent = container_constraint.normalVector;
-			float gradienDescentLength = Length(gradientDescent);
-			sf::Vector2f dp = -constraint / (gradienDescentLength * gradienDescentLength) * gradientDescent;
+			//float constraint = Dot(particlePredictedPosition - container_constraint.projectionPoint, container_constraint.normalVector);
+			float constraint = glm::dot(particlePredictedPosition - container_constraint.projectionPoint, container_constraint.normalVector);
+
+			glm::vec2 gradientDescent = container_constraint.normalVector;
+			float gradienDescentLength = glm::length(gradientDescent);
+			glm::vec2 dp = -constraint / (gradienDescentLength * gradienDescentLength) * gradientDescent;
 
 			m_ParticleList[container_constraint.particleIndex].AddPositionCorrection(dp * container_constraint.stiffness_adjusted);
 		}
@@ -164,8 +166,8 @@ void Application::Update(sf::RenderWindow& window, float dt)
 	//			// Check if there is a collision between particles
 	//			if (m_ParticleList[index].IsCollision(*particle))
 	//			{
-	//				sf::Vector2f P1Velocity = m_ParticleList[index].GetVelocity();
-	//				sf::Vector2f P2Velocity = particle->GetVelocity();
+	//				glm::vec2 P1Velocity = m_ParticleList[index].GetVelocity();
+	//				glm::vec2 P2Velocity = particle->GetVelocity();
 	//				float P1Mass = m_ParticleList[index].GetParticleMass();
 	//				float P2Mass = particle->GetParticleMass();
 
@@ -179,25 +181,25 @@ void Application::Update(sf::RenderWindow& window, float dt)
 	//				// Collision response
 
 	//				// Calculate the unit normal and unit tangent
-	//				sf::Vector2f normal = sf::Vector2f(P2Velocity.x - P1Velocity.x, P2Velocity.y - P1Velocity.y);
+	//				glm::vec2 normal = glm::vec2(P2Velocity.x - P1Velocity.x, P2Velocity.y - P1Velocity.y);
 	//				float fNormalLength = sqrt(normal.x * normal.x + normal.y * normal.y);
 	//				normal.x /= fNormalLength;
 	//				normal.y /= fNormalLength;
 
-	//				sf::Vector2f tangent = sf::Vector2f(-normal.y, normal.x);
+	//				glm::vec2 tangent = glm::vec2(-normal.y, normal.x);
 
 	//				// Distance between centers
 	//				float fDx = particle->GetPosition().x - m_ParticleList[index].GetPosition().x;
 	//				float fDy = particle->GetPosition().y - m_ParticleList[index].GetPosition().y;
 	//				float fDistance = sqrt(fDx * fDx + fDy * fDy);
-	//				sf::Vector2f offset = normal * (2.0f * PARTICLE_RADIUS - fDistance + 1.0f);
+	//				glm::vec2 offset = normal * (2.0f * PARTICLE_RADIUS - fDistance + 1.0f);
 	//				particle->SetPosition(particle->GetPosition() + offset);
 
 	//				// Project the velocities on the normal and tangent direction
-	//				float fP1n = Dot(normal, P1Velocity);
-	//				float fP1t = Dot(tangent, P1Velocity);
-	//				float fP2n = Dot(normal, P2Velocity);
-	//				float fP2t = Dot(tangent, P2Velocity);
+	//				float fP1n = glm::dot(normal, P1Velocity);
+	//				float fP1t = glm::dot(tangent, P1Velocity);
+	//				float fP2n = glm::dot(normal, P2Velocity);
+	//				float fP2t = glm::dot(tangent, P2Velocity);
 
 	//				// Calculate the components of the velocities after the collision
 	//				float fP1nFinal = (fP1n * (P1Mass - P2Mass) + 2.0f * P2Mass * fP2n) / (P1Mass + P2Mass);
@@ -240,12 +242,12 @@ void Application::Draw(sf::RenderWindow& window)
 	}
 }
 
-sf::Vector2f Application::GetRandomPosWithinLimits()
+glm::vec2 Application::GetRandomPosWithinLimits()
 {
 	int iXPosition = rand() % (int)(PARTICLE_RIGHTLIMIT - PARTICLE_LEFTLIMIT) + (int)PARTICLE_LEFTLIMIT;
 	int iYPosition = rand() % (int)(PARTICLE_BOTTOMLIMIT - PARTICLE_TOPLIMIT) + (int)PARTICLE_TOPLIMIT;
 
-	return sf::Vector2f((float)iXPosition, (float)iYPosition);
+	return glm::vec2((float)iXPosition, (float)iYPosition);
 }
 
 void Application::BuildParticleSystem(int iParticleCount)
@@ -273,7 +275,7 @@ void Application::UpdateExternalForces(float dt)
 		// -----
 
 		// Update particle velocity
-		sf::Vector2f deltaVelocity = dt * it->GetParticleMass() * it->GetForce();
+		glm::vec2 deltaVelocity = dt * it->GetParticleMass() * it->GetForce();
 		it->AddDeltaVelocity(dt * it->GetParticleMass() * it->GetForce());
 
 		// Reset position correction
@@ -332,7 +334,7 @@ void Application::UpdateActualPosAndVelocities(float dt)
 		it->SetPosition(it->GetPredictedPosition());
 
 		// Update local position
-		sf::Vector2f localOffset(WALL_LEFTLIMIT, WALL_TOPLIMIT);
+		glm::vec2 localOffset(WALL_LEFTLIMIT, WALL_TOPLIMIT);
 		it->SetLocalPosition(it->GetPosition() - localOffset);
 
 		// Update the position of the particle shape
@@ -347,12 +349,12 @@ void Application::GenerateCollisionConstraints(sf::RenderWindow& window)
 		if (it->GetPredictedPosition().x < PARTICLE_LEFTLIMIT)
 		{
 			float fIntersectionCoeff = (PARTICLE_LEFTLIMIT - it->GetPosition().x) / (it->GetPredictedPosition().x - it->GetPosition().x);
-			sf::Vector2f intersectionPoint = sf::Vector2f(PARTICLE_LEFTLIMIT,
+			glm::vec2 intersectionPoint = glm::vec2(PARTICLE_LEFTLIMIT,
 				it->GetPosition().y + fIntersectionCoeff * (it->GetPredictedPosition().y - it->GetPosition().y));
 
 			ContainerConstraint cc;
 			cc.particleIndex = it->GetParticleIndex();
-			cc.normalVector = sf::Vector2f(1.0f, 0.0f);
+			cc.normalVector = glm::vec2(1.0f, 0.0f);
 			cc.projectionPoint = intersectionPoint;
 			cc.stiffness = 0.1f;
 			cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
@@ -362,12 +364,12 @@ void Application::GenerateCollisionConstraints(sf::RenderWindow& window)
 		if (it->GetPredictedPosition().y < PARTICLE_TOPLIMIT)
 		{
 			float fIntersectionCoeff = (PARTICLE_TOPLIMIT - it->GetPosition().y) / (it->GetPredictedPosition().y - it->GetPosition().y);
-			sf::Vector2f intersectionPoint = sf::Vector2f(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
+			glm::vec2 intersectionPoint = glm::vec2(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
 				PARTICLE_TOPLIMIT);
 
 			ContainerConstraint cc;
 			cc.particleIndex = it->GetParticleIndex();
-			cc.normalVector = sf::Vector2f(0.0f, 1.0f);
+			cc.normalVector = glm::vec2(0.0f, 1.0f);
 			cc.projectionPoint = intersectionPoint;
 			cc.stiffness = 0.1f;
 			cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
@@ -377,12 +379,12 @@ void Application::GenerateCollisionConstraints(sf::RenderWindow& window)
 		if (it->GetPredictedPosition().x > PARTICLE_RIGHTLIMIT)
 		{
 			float fIntersectionCoeff = (PARTICLE_RIGHTLIMIT - it->GetPosition().x) / (it->GetPredictedPosition().x - it->GetPosition().x);
-			sf::Vector2f intersectionPoint = sf::Vector2f(PARTICLE_RIGHTLIMIT,
+			glm::vec2 intersectionPoint = glm::vec2(PARTICLE_RIGHTLIMIT,
 				it->GetPosition().y + fIntersectionCoeff * (it->GetPredictedPosition().y - it->GetPosition().y));
 
 			ContainerConstraint cc;
 			cc.particleIndex = it->GetParticleIndex();
-			cc.normalVector = sf::Vector2f(-1.0f, 0.0f);
+			cc.normalVector = glm::vec2(-1.0f, 0.0f);
 			cc.projectionPoint = intersectionPoint;
 			cc.stiffness = 0.1f;
 			cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
@@ -394,12 +396,12 @@ void Application::GenerateCollisionConstraints(sf::RenderWindow& window)
 			if (it->GetPredictedPosition().y - it->GetPosition().y != 0.0f)
 			{
 				float fIntersectionCoeff = (PARTICLE_BOTTOMLIMIT - it->GetPosition().y) / (it->GetPredictedPosition().y - it->GetPosition().y);
-				sf::Vector2f intersectionPoint = sf::Vector2f(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
+				glm::vec2 intersectionPoint = glm::vec2(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
 					PARTICLE_BOTTOMLIMIT);
 
 				ContainerConstraint cc;
 				cc.particleIndex = it->GetParticleIndex();
-				cc.normalVector = sf::Vector2f(0.0f, -1.0f);
+				cc.normalVector = glm::vec2(0.0f, -1.0f);
 				cc.projectionPoint = intersectionPoint;
 				cc.stiffness = 0.1f;
 				cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
@@ -483,12 +485,12 @@ void Application::XSPH_Viscosity(Particle& particle)
 	m_SpatialManager.GetNeighbors(particle, neighborList);
 
 	// Velocity accumulator
-	sf::Vector2f accumulatorVelocity = sf::Vector2<float>(0.0f, 0.0f);
+	glm::vec2 accumulatorVelocity = glm::vec2(0.0f, 0.0f);
 
 	for each (Particle* pNeighborParticle in neighborList)
 	{
 		// Calculate the vector between the particles
-		sf::Vector2f r = particle.GetPosition() - pNeighborParticle->GetPosition();
+		glm::vec2 r = particle.GetPosition() - pNeighborParticle->GetPosition();
 		// Use poly6 smoothing kernel
 		accumulatorVelocity += (Poly6(r, SMOOTHING_DISTANCE) * (pNeighborParticle->GetVelocity() - particle.GetVelocity()));
 	}

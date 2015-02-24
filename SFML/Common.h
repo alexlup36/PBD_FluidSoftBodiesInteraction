@@ -4,6 +4,11 @@
 #include <SFML/Graphics.hpp>
 #include <math.h>
 
+#include <glm/vec2.hpp>
+#include <glm/mat2x2.hpp>
+#include <glm/glm.hpp>
+#include <glm/common.hpp>
+
 #define EPS 0.001f
 
 const int PARTICLE_COUNT = 300;
@@ -25,10 +30,10 @@ const float WALL_TOPLIMIT			= 200.0f;
 const float WALL_BOTTOMLIMIT		= WALL_TOPLIMIT + CELL_ROWS * CELL_SIZE;
 
 // Container corners
-const sf::Vector2f ContainerBottomLeft	= sf::Vector2f(WALL_LEFTLIMIT, WALL_BOTTOMLIMIT);
-const sf::Vector2f ContainerTopLeft		= sf::Vector2f(WALL_LEFTLIMIT, WALL_TOPLIMIT);
-const sf::Vector2f ContainerBottomRight = sf::Vector2f(WALL_RIGHTLIMIT, WALL_BOTTOMLIMIT);
-const sf::Vector2f ContainerTopRight	= sf::Vector2f(WALL_RIGHTLIMIT, WALL_TOPLIMIT);
+const glm::vec2 ContainerBottomLeft		= glm::vec2(WALL_LEFTLIMIT, WALL_BOTTOMLIMIT);
+const glm::vec2 ContainerTopLeft		= glm::vec2(WALL_LEFTLIMIT, WALL_TOPLIMIT);
+const glm::vec2 ContainerBottomRight	= glm::vec2(WALL_RIGHTLIMIT, WALL_BOTTOMLIMIT);
+const glm::vec2 ContainerTopRight		= glm::vec2(WALL_RIGHTLIMIT, WALL_TOPLIMIT);
 
 // Particle limits
 const float PARTICLE_LEFTLIMIT		= WALL_LEFTLIMIT + PARTICLE_RADIUS;
@@ -37,7 +42,7 @@ const float PARTICLE_TOPLIMIT		= WALL_TOPLIMIT + PARTICLE_RADIUS;
 const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS;
 
 // Forces
-const sf::Vector2f GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
+const glm::vec2 GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
 const bool GRAVITY_ON = true;
 const bool XSPH_VISCOSITY = true;
 

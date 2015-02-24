@@ -17,8 +17,8 @@ public:
 		int particleIndex;	
 		float stiffness; 
 		float stiffness_adjusted; 
-		sf::Vector2f normalVector;
-		sf::Vector2f projectionPoint;
+		glm::vec2 normalVector;
+		glm::vec2 projectionPoint;
 	};
 
 	Application();
@@ -30,7 +30,7 @@ public:
 
 	void BuildParticleSystem(int iParticleCount);
 
-	sf::Vector2f GetRandomPosWithinLimits();
+	glm::vec2 GetRandomPosWithinLimits();
 
 private:
 	sf::Texture m_Texture;
@@ -51,7 +51,7 @@ private:
 	void GenerateCollisionConstraints(sf::RenderWindow& window);
 	void XSPH_Viscosity(Particle& particle);
 
-	inline float Poly6(const sf::Vector2f& r, float h) 
+	inline float Poly6(const glm::vec2& r, float h) 
 	{
 		float rLength = sqrt(r.x * r.x + r.y * r.y);
 		
@@ -66,17 +66,15 @@ private:
 		}
 	}
 
-	inline sf::Vector2f SpikyGradient(const sf::Vector2f& r, float h)
+	inline glm::vec2 SpikyGradient(const glm::vec2& r, float h)
 	{
 		float rLength = sqrt(r.x * r.x + r.y * r.y);
 		float diff = h - rLength;
 
-		return SPIKYGRADCOEFF * diff * diff * sf::Vector2f(r.x / rLength, r.y / rLength);
+		return SPIKYGRADCOEFF * diff * diff * glm::vec2(r.x / rLength, r.y / rLength);
 	}
 
-	inline float Dot(const sf::Vector2f& v1, const sf::Vector2f& v2) { return v1.x * v2.x + v1.y * v2.y; }
-	inline float Length(const sf::Vector2f& v) { return v.x * v.x + v.y * v.y; }
-	inline void PrintVector2(const sf::Vector2f& v) { std::cout << "x = " << v.x << " y = " << v.y << std::endl; }
+	inline void PrintVector2(const glm::vec2& v) { std::cout << "x = " << v.x << " y = " << v.y << std::endl; }
 };
 
 

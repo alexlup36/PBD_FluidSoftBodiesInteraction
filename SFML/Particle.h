@@ -6,34 +6,34 @@
 class Particle
 {
 public:
-	Particle(const sf::Vector2f& position, float radius);
+	Particle(const glm::vec2& position, float radius);
 	~Particle();
 
 	void Draw(sf::RenderWindow& window);
 	void UpdateShapePosition();
 
 	// Getters and setters
-	inline void SetPosition(const sf::Vector2f& newPosition) { m_Position = newPosition; }
-	inline void AddDeltaPosition(const sf::Vector2f& deltaPosition) { m_Position += deltaPosition; }
-	inline const sf::Vector2f GetPosition() const { return m_Position; }
+	inline void SetPosition(const glm::vec2& newPosition) { m_Position = newPosition; }
+	inline void AddDeltaPosition(const glm::vec2& deltaPosition) { m_Position += deltaPosition; }
+	inline const glm::vec2 GetPosition() const { return m_Position; }
 
-	inline void SetPredictedPosition(const sf::Vector2f& newPredPos) { m_PredictedPosition = newPredPos; }
-	inline void AddDeltaPredPosition(const sf::Vector2f& deltaPredPosition) { m_PredictedPosition += (deltaPredPosition); }
-	inline const sf::Vector2f GetPredictedPosition() const { return m_PredictedPosition; }
+	inline void SetPredictedPosition(const glm::vec2& newPredPos) { m_PredictedPosition = newPredPos; }
+	inline void AddDeltaPredPosition(const glm::vec2& deltaPredPosition) { m_PredictedPosition += (deltaPredPosition); }
+	inline const glm::vec2 GetPredictedPosition() const { return m_PredictedPosition; }
 
-	inline const sf::Vector2f GetLocalPosition() const { return m_LocalPosition; }
-	inline void SetLocalPosition(const sf::Vector2f& newLocalPosition) { m_LocalPosition = newLocalPosition; }
+	inline const glm::vec2 GetLocalPosition() const { return m_LocalPosition; }
+	inline void SetLocalPosition(const glm::vec2& newLocalPosition) { m_LocalPosition = newLocalPosition; }
 
-	inline const sf::Vector2f GetPositionCorrection() const { return m_PositionCorrection; }
-	inline void AddPositionCorrection(const sf::Vector2f& positionOffset) { m_PositionCorrection += positionOffset; }
+	inline const glm::vec2 GetPositionCorrection() const { return m_PositionCorrection; }
+	inline void AddPositionCorrection(const glm::vec2& positionOffset) { m_PositionCorrection += positionOffset; }
 	inline void ResetPositionCorrection() { m_PositionCorrection.x = 0.0f; m_PositionCorrection.y = 0.0f; }
 
-	inline void SetVelocity(const sf::Vector2f& newVelocity) { m_Velocity = newVelocity; }
-	inline void AddDeltaVelocity(const sf::Vector2f& deltaVelocity) { m_Velocity += deltaVelocity; }
-	inline sf::Vector2f GetVelocity() const { return m_Velocity; }
+	inline void SetVelocity(const glm::vec2& newVelocity) { m_Velocity = newVelocity; }
+	inline void AddDeltaVelocity(const glm::vec2& deltaVelocity) { m_Velocity += deltaVelocity; }
+	inline glm::vec2 GetVelocity() const { return m_Velocity; }
 
-	inline void SetForce(const sf::Vector2f& newForce) { m_Force = newForce; }
-	inline sf::Vector2f GetForce() const { return m_Force; }
+	inline void SetForce(const glm::vec2& newForce) { m_Force = newForce; }
+	inline glm::vec2 GetForce() const { return m_Force; }
 
 	inline float GetRadius() const { return m_fRadius; }
 
@@ -84,12 +84,12 @@ private:
 	sf::CircleShape m_Shape;
 	float m_fRadius;
 
-	sf::Vector2f m_LocalPosition;
-	sf::Vector2f m_Position;
-	sf::Vector2f m_PredictedPosition;
-	sf::Vector2f m_PositionCorrection;
-	sf::Vector2f m_Velocity;
-	sf::Vector2f m_Force;
+	glm::vec2 m_LocalPosition;
+	glm::vec2 m_Position;
+	glm::vec2 m_PredictedPosition;
+	glm::vec2 m_PositionCorrection;
+	glm::vec2 m_Velocity;
+	glm::vec2 m_Force;
 	float m_fRestDensity;
 	float m_fSPHDensity;
 	float m_fMass;
