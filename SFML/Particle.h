@@ -18,12 +18,16 @@ public:
 	inline const sf::Vector2f GetPosition() const { return m_Position; }
 
 	inline void SetPredictedPosition(const sf::Vector2f& newPredPos) { m_PredictedPosition = newPredPos; }
-	inline void AddDeltaPredPosition(const sf::Vector2f& deltaPredPosition) { m_PredictedPosition += deltaPredPosition; }
+	inline void AddDeltaPredPosition(const sf::Vector2f& deltaPredPosition) { m_PredictedPosition += (deltaPredPosition); }
 	inline const sf::Vector2f GetPredictedPosition() const { return m_PredictedPosition; }
 
 	inline const sf::Vector2f GetLocalPosition() const { return m_LocalPosition; }
 	inline void SetLocalPosition(const sf::Vector2f& newLocalPosition) { m_LocalPosition = newLocalPosition; }
-	
+
+	inline const sf::Vector2f GetPositionCorrection() const { return m_PositionCorrection; }
+	inline void AddPositionCorrection(const sf::Vector2f& positionOffset) { m_PositionCorrection += positionOffset; }
+	inline void ResetPositionCorrection() { m_PositionCorrection.x = 0.0f; m_PositionCorrection.y = 0.0f; }
+
 	inline void SetVelocity(const sf::Vector2f& newVelocity) { m_Velocity = newVelocity; }
 	inline void AddDeltaVelocity(const sf::Vector2f& deltaVelocity) { m_Velocity += deltaVelocity; }
 	inline sf::Vector2f GetVelocity() const { return m_Velocity; }
@@ -32,6 +36,13 @@ public:
 	inline sf::Vector2f GetForce() const { return m_Force; }
 
 	inline float GetRadius() const { return m_fRadius; }
+
+	inline float GetRestDensity() const { return m_fRestDensity; }
+	inline float GetSPHDensity() const { return m_fSPHDensity; }
+	inline void SetSPHDensity(float newDensity) { m_fSPHDensity = newDensity; }
+
+	inline float GetLambda() const { return m_fLambda; }
+	inline void SetLambda(float newLambda) { m_fLambda = newLambda; }
 
 	inline bool IsAtLimit()
 	{
@@ -76,10 +87,16 @@ private:
 	sf::Vector2f m_LocalPosition;
 	sf::Vector2f m_Position;
 	sf::Vector2f m_PredictedPosition;
+	sf::Vector2f m_PositionCorrection;
 	sf::Vector2f m_Velocity;
 	sf::Vector2f m_Force;
+	float m_fRestDensity;
+	float m_fSPHDensity;
 	float m_fMass;
 	float m_fInvMass;
+
+	// Position based fluid
+	float m_fLambda;
 };
 
 #endif // PARTICLE_H

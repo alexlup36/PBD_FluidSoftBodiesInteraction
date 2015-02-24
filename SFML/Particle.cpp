@@ -19,13 +19,15 @@ Particle::Particle(const sf::Vector2f& position, float radius)
 	m_LocalPosition			= sf::Vector2f(m_Position.x - WALL_LEFTLIMIT, m_Position.y - WALL_TOPLIMIT);
 	m_PredictedPosition		= m_Position;
 
-	float fVelX = (float)(rand() % 200 - 100);
-	float fVelY = (float)(rand() % 200 - 100);
-	m_Velocity	= sf::Vector2f(fVelX, fVelY);
+	float fVelX = 0.0f;// (float)(rand() % 200 - 100);
+	float fVelY = 0.0f;// (float)(rand() % 200 - 100);
+	m_Velocity = sf::Vector2f(fVelX, fVelY);
 	m_Force		= sf::Vector2f(0.0f, 0.0f);
-	m_fMass		= (float)(rand() % 100 + 10);//10.0f;
+	m_fMass		= 1.0f;
 	m_fInvMass	= 1.0f / m_fMass;
 	m_fRadius	= radius;
+	m_fRestDensity  = WATER_DENSITY;
+	m_fSPHDensity = 0.0f;
 
 	// Increment particle index
 	m_iParticleIndex = m_iGlobalIndex++;

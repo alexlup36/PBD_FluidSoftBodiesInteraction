@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include "Common.h"
 #include "Particle.h"
@@ -16,12 +17,12 @@ public:
 	void Setup();
 	void ClearBuckets();
 	void RegisterObject(Particle* particle);
-	std::vector<Particle*> GetNeighbors(const Particle& particle);
+	void/*std::vector<Particle*>*/ GetNeighbors(const Particle& particle, std::vector<Particle*>& nearbyParticleList);
 
 private:
 	std::map<int, std::vector<Particle*>> m_Buckets;
 
-	std::vector<int> GetIdForObject(const Particle& particle);
+	void/*std::vector<int>*/ GetIdForObject(const Particle& particle, std::set<int>& cellIDList);
 };
 
 #endif // SPATIAL_PARTITION
