@@ -70,4 +70,16 @@ const float SPIKYGRADCOEFF = 45.0f / PI / SMOOTHING_DISTANCE6;
 // PBF constant
 const float RELAXATION_PARAMETER = 0.001f;
 
+// ------------------------------------------------------------------------------
+// Soft body constants
+// ------------------------------------------------------------------------------
+const float SOFTBODY_PARTICLE_RADIUS = 10.0f;
+const float SOFTBODY_RESTITUTION_COEFF = 0.8f;
+const float SOFTBODY_STIFFNESS_VALUE = 1.0f; // 0.01f - almost rigid 1.0f - 100.0f elastic
+
+const float SOFTBODYPARTICLE_LEFTLIMIT = WALL_LEFTLIMIT + SOFTBODY_PARTICLE_RADIUS;
+const float SOFTBODYPARTICLE_RIGHTLIMIT = WALL_RIGHTLIMIT - SOFTBODY_PARTICLE_RADIUS;
+const float SOFTBODYPARTICLE_TOPLIMIT = WALL_TOPLIMIT + SOFTBODY_PARTICLE_RADIUS;
+const float SOFTBODYPARTICLE_BOTTOMLIMIT = WALL_BOTTOMLIMIT - SOFTBODY_PARTICLE_RADIUS;
+
 #endif // COMMON_H

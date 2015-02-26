@@ -63,7 +63,7 @@ public:
 		return radiusSum * radiusSum > (fDx * fDx) + (fDy * fDy);
 	}
 
-	inline void SetDefaultColor() { m_Shape.setFillColor(sf::Color::Green); }
+	inline void SetDefaultColor() { m_Shape.setFillColor(sf::Color::Blue); }
 	inline void SetIsCollidingColor() { m_Shape.setFillColor(sf::Color::Red); }
 	inline void SetAsNeighborColor() { m_Shape.setFillColor(sf::Color::Magenta); }
 

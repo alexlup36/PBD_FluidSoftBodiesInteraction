@@ -232,9 +232,6 @@ void Application::Update(sf::RenderWindow& window, float dt)
 
 void Application::Draw(sf::RenderWindow& window)
 {
-	// Draw container
-	DrawContainer(window);
-
 	// Draw particles
 	for (int index = 0; index < PARTICLE_COUNT; index++)
 	{
@@ -441,27 +438,6 @@ void Application::GenerateCollisionConstraints(sf::RenderWindow& window)
 	//		}
 	//	}
 	//}
-}
-
-void Application::DrawContainer(sf::RenderWindow& window)
-{
-	// Draw limits
-	sf::Vertex line[] =
-	{
-		sf::Vertex(sf::Vector2f(WALL_LEFTLIMIT, WALL_TOPLIMIT)), // Top limit
-		sf::Vertex(sf::Vector2f(WALL_RIGHTLIMIT, WALL_TOPLIMIT)),
-
-		sf::Vertex(sf::Vector2f(WALL_LEFTLIMIT, WALL_BOTTOMLIMIT)), // Bottom limit
-		sf::Vertex(sf::Vector2f(WALL_RIGHTLIMIT, WALL_BOTTOMLIMIT)),
-
-		sf::Vertex(sf::Vector2f(WALL_LEFTLIMIT, WALL_TOPLIMIT)), // Left limit
-		sf::Vertex(sf::Vector2f(WALL_LEFTLIMIT, WALL_BOTTOMLIMIT)),
-
-		sf::Vertex(sf::Vector2f(WALL_RIGHTLIMIT, WALL_TOPLIMIT)), // Right limit
-		sf::Vertex(sf::Vector2f(WALL_RIGHTLIMIT, WALL_BOTTOMLIMIT)),
-	};
-
-	window.draw(line, 8, sf::Lines);
 }
 
 void Application::FindNeighborParticles()
