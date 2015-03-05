@@ -8,7 +8,7 @@ Particle::Particle(const glm::vec2& position, float radius)
 {
 	m_Shape.setPosition(sf::Vector2<float>(position.x, position.y));
 	m_Shape.setRadius(radius);
-	m_Shape.setOutlineColor(sf::Color::Red);
+	m_Shape.setOutlineColor(sf::Color::Blue);
 	m_Shape.setOutlineThickness(1.0f);
 	SetDefaultColor();
 

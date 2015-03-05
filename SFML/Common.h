@@ -10,7 +10,13 @@
 #include <glm/common.hpp>
 
 #define EPS 0.001f
-#define TIMESTEP 1.0f / 60.0f
+
+// Simulation time
+const float TICKS_PER_SECOND	= 30.0f;
+const float SKIP_TICKS			= 1.0f / TICKS_PER_SECOND;
+const float FIXED_DELTA			= 1.0f / 30.0f;
+const int MAX_FRAMESKIP			= 1;
+const int SPEEDMULTIPLIER		= 2;
 
 const int PARTICLE_WIDTH_COUNT = 40;
 const int PARTICLE_HEIGHT_COUNT = 40;
@@ -53,7 +59,7 @@ const bool FLUID_SIMULATION = true;
 const bool PBD_COLLISION = false;
 
 // Physics constants
-const float VELOCITY_DAMPING = 0.99f;
+const float VELOCITY_DAMPING = 0.999f;
 
 // Solver iterations
 const int SOLVER_ITERATIONS = 3;
@@ -78,7 +84,7 @@ const float SMOOTHING_DISTANCE6 = CELL_SIZE * CELL_SIZE * CELL_SIZE *
 const float SPIKYGRADCOEFF = 45.0f / PI / SMOOTHING_DISTANCE6;
 
 // PBF constant
-const float RELAXATION_PARAMETER = 0.00001f;
+const float RELAXATION_PARAMETER = 0.000001f;
 
 // ------------------------------------------------------------------------------
 // Soft body constants

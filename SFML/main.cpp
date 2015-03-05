@@ -37,7 +37,7 @@ int main()
 	sf::Vector2i fullscreenResolution = sf::Vector2i(1920, 1080);
 
 	sf::RenderWindow window(sf::VideoMode(windowResolution.x, windowResolution.y), "SFML window");
-	//window.setFramerateLimit(60);
+	window.setFramerateLimit(60);
 	sf::Color clearColor = sf::Color::Black;
 
 	// ---------------------------------------------------------------------------
@@ -46,8 +46,8 @@ int main()
 	sf::Time currentTime = timer.getElapsedTime();
 	sf::Time newTime;
 	float fTimeAccumulator = 0.0f;
+	int iNextGameTick = SKIP_TICKS * 3.0f;
 
-	
 	// ---------------------------------------------------------------------------
 	// Mouse stats
 	bool bLeftMouseClickPressed = false;
@@ -86,19 +86,10 @@ int main()
 	int iCurrentSBIndex = 0;
 
 	// ---------------------------------------------------------------------------
+
 	// Main loop
 	while (window.isOpen())
 	{
-		newTime = timer.getElapsedTime();
-		sf::Time intervalTime = newTime - currentTime;
-		float fFrameTime = intervalTime.asSeconds();
-		if (fFrameTime > 0.25f)
-		{
-			fFrameTime = 0.25f;
-		}
-		currentTime = newTime;
-		fTimeAccumulator += fFrameTime;
-
 		// Update events
 		sf::Event event;
 		while (window.pollEvent(event))
@@ -311,21 +302,42 @@ int main()
 			softBodyControlledParticle->Position = glm::vec2(currentMousePosition.x, currentMousePosition.y);
 		}
 
-
-		while (fTimeAccumulator >= TIMESTEP)
+		// Handle simulation time
+		newTime = timer.getElapsedTime();
+		sf::Time intervalTime = newTime - currentTime;
+		int loops = 0;
+		float fFrameTime = intervalTime.asSeconds();
+		if (fFrameTime > 0.25f)
 		{
-			// Fluid application update 
-			testApp->Update(window, TIMESTEP);
+			fFrameTime = 0.25f;
+		}
+		currentTime = newTime;
+		fTimeAccumulator += fFrameTime;
 
-			// Soft-bodies update
-			/*for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+		while (fTimeAccumulator > iNextGameTick && loops < MAX_FRAMESKIP) 
+		{
+			for (int speedCounter = 0; speedCounter < SPEEDMULTIPLIER; speedCounter++)
 			{
-			softBody->Update(time.asSeconds());
-			}*/
+				// Fluid application update 
+				testApp->Update(window, FIXED_DELTA);
 
-			
+				// Soft-bodies update
+				/*for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+				{
+				softBody->Update(time.asSeconds());
+				}*/
 
-			fTimeAccumulator -= TIMESTEP;
+				std::string fps = "FPS: " + std::to_string(1.0f / intervalTime.asSeconds()) + "\n";
+				std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
+				std::string particleCount = "Particles: " + std::to_string(PARTICLE_COUNT) + "\n";
+				std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
+				std::string gravityOn = "Gravity: " + gravityStatus + "\n";
+
+				stats.setString(milisecPerFrame + fps + particleCount + gravityOn);
+			}
+
+			iNextGameTick += SKIP_TICKS * 3;
+			loops++;
 		}
 
 		// Container draw
@@ -337,15 +349,6 @@ int main()
 		{
 		softBody->Draw(window);
 		}*/
-
-
-		std::string fps = "FPS: " + std::to_string(1.0f / intervalTime.asSeconds()) + "\n";
-			std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
-			std::string particleCount = "Particles: " + std::to_string(PARTICLE_COUNT) + "\n";
-			std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
-			std::string gravityOn = "Gravity: " + gravityStatus + "\n";
-
-			stats.setString(milisecPerFrame + fps + particleCount + gravityOn);
 
 		window.draw(stats);
 
