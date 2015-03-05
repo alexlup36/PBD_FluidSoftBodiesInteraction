@@ -43,7 +43,10 @@ int main()
 	// ---------------------------------------------------------------------------
 	// Time
 	sf::Clock timer;
-	sf::Time time;
+	sf::Time currentTime = timer.getElapsedTime();
+	sf::Time newTime;
+	float fTimeAccumulator = 0.0f;
+
 	
 	// ---------------------------------------------------------------------------
 	// Mouse stats
@@ -68,9 +71,9 @@ int main()
 
 	// ---------------------------------------------------------------------------
 	// Application - fluid implementation
-	//std::shared_ptr<Application> testApp = std::make_shared<Application>();
-	//testApp->Initialize(window);
-	//testApp->BuildParticleSystem(PARTICLE_COUNT);
+	std::shared_ptr<Application> testApp = std::make_shared<Application>();
+	testApp->Initialize(window);
+	testApp->BuildParticleSystem(PARTICLE_COUNT);
 
 	// ---------------------------------------------------------------------------
 	// Soft-body simulation
@@ -86,8 +89,15 @@ int main()
 	// Main loop
 	while (window.isOpen())
 	{
-		// Restart timer
-		timer.restart().asSeconds();
+		newTime = timer.getElapsedTime();
+		sf::Time intervalTime = newTime - currentTime;
+		float fFrameTime = intervalTime.asSeconds();
+		if (fFrameTime > 0.25f)
+		{
+			fFrameTime = 0.25f;
+		}
+		currentTime = newTime;
+		fTimeAccumulator += fFrameTime;
 
 		// Update events
 		sf::Event event;
@@ -301,37 +311,46 @@ int main()
 			softBodyControlledParticle->Position = glm::vec2(currentMousePosition.x, currentMousePosition.y);
 		}
 
-		// Fluid application update 
-		//testApp->Update(window, time.asSeconds());
-		// Soft-bodies update
-		for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+
+		while (fTimeAccumulator >= TIMESTEP)
 		{
+			// Fluid application update 
+			testApp->Update(window, TIMESTEP);
+
+			// Soft-bodies update
+			/*for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+			{
 			softBody->Update(time.asSeconds());
+			}*/
+
+			
+
+			fTimeAccumulator -= TIMESTEP;
 		}
 
 		// Container draw
 		DrawContainer(window);
 		// Fluid application draw
-		//testApp->Draw(window);
+		testApp->Draw(window);
 		// Soft-bodies draw
-		for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+		/*for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
 		{
-			softBody->Draw(window);
-		}
+		softBody->Draw(window);
+		}*/
 
-		std::string fps = "FPS: " + std::to_string(1.0f / time.asSeconds()) + "\n";
-		std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(time.asSeconds()) + "\n";
-		std::string particleCount = "Particles: " + std::to_string(PARTICLE_COUNT) + "\n";
-		std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
-		std::string gravityOn = "Gravity: " + gravityStatus + "\n";
 
-		stats.setString(milisecPerFrame + fps + particleCount + gravityOn);
+		std::string fps = "FPS: " + std::to_string(1.0f / intervalTime.asSeconds()) + "\n";
+			std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
+			std::string particleCount = "Particles: " + std::to_string(PARTICLE_COUNT) + "\n";
+			std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
+			std::string gravityOn = "Gravity: " + gravityStatus + "\n";
+
+			stats.setString(milisecPerFrame + fps + particleCount + gravityOn);
+
 		window.draw(stats);
 
 		// --------------------------------------------------------------------------
 		window.display();
-
-		time = timer.getElapsedTime();
 	}
 
 	return 0;

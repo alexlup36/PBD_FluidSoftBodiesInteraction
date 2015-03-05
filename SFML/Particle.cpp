@@ -19,20 +19,18 @@ Particle::Particle(const glm::vec2& position, float radius)
 	m_LocalPosition			= glm::vec2(m_Position.x - WALL_LEFTLIMIT, m_Position.y - WALL_TOPLIMIT);
 	m_PredictedPosition		= m_Position;
 
-	float fVelX = 100.0f;// 0.0f;// (float)(rand() % 200 - 100);
-	float fVelY = 100.0f;// 0.0f;// (float)(rand() % 200 - 100);
+	float fVelX = 0.0f;// (float)(rand() % 200 - 100);
+	float fVelY = 0.0f;// (float)(rand() % 200 - 100);
 	m_Velocity		= glm::vec2(fVelX, fVelY);
 	m_Force			= glm::vec2(0.0f, 0.0f);
 	m_fMass			= 1.0f;
 	m_fInvMass		= 1.0f / m_fMass;
 	m_fRadius		= radius;
-	m_fRestDensity  = WATER_DENSITY;
 	m_fSPHDensity	= 0.0f;
+	m_fLambda		= 0.0f;
 
 	// Increment particle index
 	m_iParticleIndex = m_iGlobalIndex++;
-
-	//std::cout << "Crated particle: " << m_iParticleIndex << std::endl;
 }
 
 

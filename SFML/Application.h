@@ -51,28 +51,79 @@ private:
 	void GenerateCollisionConstraints(sf::RenderWindow& window);
 	void XSPH_Viscosity(Particle& particle);
 
-	inline float Poly6(const glm::vec2& r, float h) 
+	// ------------------------------------------------------------------------
+
+	void ComputeParticleConstraint(Particle& particle, std::vector<Particle*>& pNeighborList);
+
+	// ------------------------------------------------------------------------
+
+	glm::vec2 ComputeParticleGradientConstraint(Particle& particle, Particle& neighbor, std::vector<Particle*>& pParticleNeighborList);
+
+	// ------------------------------------------------------------------------
+
+	void ComputeLambda(Particle& particle, std::vector<Particle*>& pParticleNeighborList);
+
+	// ------------------------------------------------------------------------
+
+	void ComputePositionCorrection(Particle& particle, std::vector<Particle*>& pParticleNeighborList);
+
+	// ------------------------------------------------------------------------
+
+	float ComputeArtificialPressureTerm(const Particle& p1, const Particle& p2);
+
+	// ------------------------------------------------------------------------
+
+	float Poly6Kernel(const glm::vec2& pi, const glm::vec2& pj) 
 	{
-		float rLength = sqrt(r.x * r.x + r.y * r.y);
+		float rLength = glm::length(pi - pj);
+		float rLength2 = rLength * rLength;
 		
-		if (0 <= rLength && rLength <= h)
-		{
-			float diff = h * h - rLength * rLength;
-			return POLY6COEFF * diff * diff * diff;
-		}
-		else
+		// Poly6 kernel is 0 for r<=h (lenght<=smoothing distance)
+		if (rLength > SMOOTHING_DISTANCE || rLength == 0.0f)
 		{
 			return 0.0f;
 		}
+		
+		float diff = SMOOTHING_DISTANCE2 - rLength2;
+		return POLY6COEFF * diff * diff * diff;
 	}
 
-	inline glm::vec2 SpikyGradient(const glm::vec2& r, float h)
+	// ------------------------------------------------------------------------
+
+	glm::vec2 Poly6KernelGradient(const glm::vec2& pi, const glm::vec2& pj)
 	{
-		float rLength = sqrt(r.x * r.x + r.y * r.y);
-		float diff = h - rLength;
+		glm::vec2 r = pi - pj;
+		float rLength = glm::length(r);
+		float rLength2 = rLength * rLength;
 
-		return SPIKYGRADCOEFF * diff * diff * glm::vec2(r.x / rLength, r.y / rLength);
+		// Poly6 kernel is 0 for r<=h (lenght<=smoothing distance)
+		if (rLength > SMOOTHING_DISTANCE || rLength == 0.0f)
+		{
+			return glm::vec2(0.0f);
+		}
+
+		float diff = SMOOTHING_DISTANCE2 - rLength2;
+		return (-1.0f) * SIXPOLY6COEFF * r * diff * diff;
 	}
+
+	// ------------------------------------------------------------------------
+
+	glm::vec2 SpikyKernelGradient(const glm::vec2& pi, const glm::vec2& pj)
+	{
+		glm::vec2 r = pi - pj;
+		float rLength = glm::length(r);
+
+		if (rLength > SMOOTHING_DISTANCE || rLength == 0.0f)
+		{
+			return glm::vec2(0.0f);
+		}
+
+		float diff = SMOOTHING_DISTANCE - rLength;
+
+		return (SPIKYGRADCOEFF * diff * diff * 1.0f / (rLength + 0.0001f)) * r;
+	}
+
+	// ------------------------------------------------------------------------
 
 	inline void PrintVector2(const glm::vec2& v) { std::cout << "x = " << v.x << " y = " << v.y << std::endl; }
 };

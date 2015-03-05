@@ -18,15 +18,14 @@ public:
 	inline const glm::vec2 GetPosition() const { return m_Position; }
 
 	inline void SetPredictedPosition(const glm::vec2& newPredPos) { m_PredictedPosition = newPredPos; }
-	inline void AddDeltaPredPosition(const glm::vec2& deltaPredPosition) { m_PredictedPosition += (deltaPredPosition); }
+	inline void AddDeltaPredPosition(const glm::vec2& deltaPredPosition) { m_PredictedPosition += deltaPredPosition; }
 	inline const glm::vec2 GetPredictedPosition() const { return m_PredictedPosition; }
 
 	inline const glm::vec2 GetLocalPosition() const { return m_LocalPosition; }
 	inline void SetLocalPosition(const glm::vec2& newLocalPosition) { m_LocalPosition = newLocalPosition; }
 
 	inline const glm::vec2 GetPositionCorrection() const { return m_PositionCorrection; }
-	inline void AddPositionCorrection(const glm::vec2& positionOffset) { m_PositionCorrection += positionOffset; }
-	inline void ResetPositionCorrection() { m_PositionCorrection.x = 0.0f; m_PositionCorrection.y = 0.0f; }
+	inline void SetPositionCorrection(const glm::vec2& positionOffset) { m_PositionCorrection = positionOffset; }
 
 	inline void SetVelocity(const glm::vec2& newVelocity) { m_Velocity = newVelocity; }
 	inline void AddDeltaVelocity(const glm::vec2& deltaVelocity) { m_Velocity += deltaVelocity; }
@@ -37,12 +36,14 @@ public:
 
 	inline float GetRadius() const { return m_fRadius; }
 
-	inline float GetRestDensity() const { return m_fRestDensity; }
 	inline float GetSPHDensity() const { return m_fSPHDensity; }
 	inline void SetSPHDensity(float newDensity) { m_fSPHDensity = newDensity; }
 
 	inline float GetLambda() const { return m_fLambda; }
 	inline void SetLambda(float newLambda) { m_fLambda = newLambda; }
+
+	inline float GetDensityConstraint() const { return m_fDensityConstraint; }
+	inline void SetDensityConstraint(float newDensityConstraint) { m_fDensityConstraint = newDensityConstraint; }
 
 	inline bool IsAtLimit()
 	{
@@ -90,8 +91,8 @@ private:
 	glm::vec2 m_PositionCorrection;
 	glm::vec2 m_Velocity;
 	glm::vec2 m_Force;
-	float m_fRestDensity;
 	float m_fSPHDensity;
+	float m_fDensityConstraint;
 	float m_fMass;
 	float m_fInvMass;
 

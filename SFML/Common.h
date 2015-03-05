@@ -10,16 +10,19 @@
 #include <glm/common.hpp>
 
 #define EPS 0.001f
+#define TIMESTEP 1.0f / 60.0f
 
-const int PARTICLE_COUNT = 300;
-const float PARTICLE_RADIUS = 2.0f;
+const int PARTICLE_WIDTH_COUNT = 40;
+const int PARTICLE_HEIGHT_COUNT = 40;
+const int PARTICLE_COUNT = PARTICLE_WIDTH_COUNT * PARTICLE_HEIGHT_COUNT;
+const float PARTICLE_RADIUS = 5.0f;
 
 // Container dimensions
 const float CONTAINER_WIDTH = 1100.0f;
 const float CONTAINER_HEIGHT = 550;
 
 // Spatial partitioning
-const float CELL_SIZE = 3685.5f * pow((float)PARTICLE_COUNT, -0.464f);
+const float CELL_SIZE = 4.0f * PARTICLE_RADIUS;// 3685.5f * pow((float)PARTICLE_COUNT, -0.464f);
 const float CELL_COLS = std::trunc(CONTAINER_WIDTH / CELL_SIZE);
 const float CELL_ROWS = std::trunc(CONTAINER_HEIGHT / CELL_SIZE);
 
@@ -36,39 +39,46 @@ const glm::vec2 ContainerBottomRight	= glm::vec2(WALL_RIGHTLIMIT, WALL_BOTTOMLIM
 const glm::vec2 ContainerTopRight		= glm::vec2(WALL_RIGHTLIMIT, WALL_TOPLIMIT);
 
 // Particle limits
-const float PARTICLE_LEFTLIMIT		= WALL_LEFTLIMIT + PARTICLE_RADIUS;
-const float PARTICLE_RIGHTLIMIT		= WALL_RIGHTLIMIT - PARTICLE_RADIUS;
-const float PARTICLE_TOPLIMIT		= WALL_TOPLIMIT + PARTICLE_RADIUS;
-const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS;
+const float PARTICLE_LEFTLIMIT		= WALL_LEFTLIMIT + PARTICLE_RADIUS + 1.0f;
+const float PARTICLE_RIGHTLIMIT		= WALL_RIGHTLIMIT - PARTICLE_RADIUS - 1.0f;
+const float PARTICLE_TOPLIMIT		= WALL_TOPLIMIT + PARTICLE_RADIUS + 1.0f;
+const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS - 1.0f;
 
 // Forces
 const glm::vec2 GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
 const bool GRAVITY_ON = true;
 const bool XSPH_VISCOSITY = true;
+const bool ARTIFICIAL_PRESSURE_TERM = true;
+const bool FLUID_SIMULATION = true;
+const bool PBD_COLLISION = false;
 
 // Physics constants
-const float VELOCITY_DAMPING = 0.99999f;
+const float VELOCITY_DAMPING = 0.99f;
 
 // Solver iterations
-const int SOLVER_ITERATIONS = 5;
+const int SOLVER_ITERATIONS = 3;
 
 // Constants used for SPH
 const float XSPHParam = 0.05f;
 const float SMOOTHING_DISTANCE = CELL_SIZE;
+const float SMOOTHING_DISTANCE2 = CELL_SIZE * CELL_SIZE;
 const float SMOOTHING_DISTANCE9 = CELL_SIZE * CELL_SIZE * CELL_SIZE *
 	CELL_SIZE * CELL_SIZE * CELL_SIZE *
 	CELL_SIZE * CELL_SIZE * CELL_SIZE;
 const float PI = 3.14159265359f;
 const float POLY6COEFF = 315.0f / 64.0f / PI / SMOOTHING_DISTANCE9;
-const float WATER_DENSITY = 1000.0f; // kg/m3
-const float ONE_OVER_WATER_DENSITY = 1.0f / WATER_DENSITY;
+const float SIXPOLY6COEFF = 6.0f * POLY6COEFF;
+const float WATER_RESTDENSITY = 1000.0f;
+const float INVERSE_WATER_RESTDENSITY = 1.0f / WATER_RESTDENSITY;
+const float ARTIFICIAL_PRESSURE = POLY6COEFF * std::pow(SMOOTHING_DISTANCE2 - 0.1f * SMOOTHING_DISTANCE2, 3.0f);
+const float INVERSE_ARTIFICIAL_PRESSURE = 1.0f / ARTIFICIAL_PRESSURE;
 
 const float SMOOTHING_DISTANCE6 = CELL_SIZE * CELL_SIZE * CELL_SIZE *
 	CELL_SIZE * CELL_SIZE * CELL_SIZE;
 const float SPIKYGRADCOEFF = 45.0f / PI / SMOOTHING_DISTANCE6;
 
 // PBF constant
-const float RELAXATION_PARAMETER = 0.001f;
+const float RELAXATION_PARAMETER = 0.00001f;
 
 // ------------------------------------------------------------------------------
 // Soft body constants
