@@ -1,9 +1,6 @@
 #include "SoftBody.h"
 #include "Mat2Utility.h"
 
-int SoftBodyParticle::m_iGlobalIndex = 0;
-SoftBodyParticle SoftBody::m_Pivot;
-
 SoftBody::SoftBody()
 {
 	m_bAllowFlipping		= true;
@@ -12,6 +9,8 @@ SoftBody::SoftBody()
 	m_bQuadraticMatch		= false;
 
 	m_bConvexHull			= false;
+	m_bDrawConvexHull		= false;
+	m_bBezierCurve			= true;
 
 	m_bReady				= false;
 	m_bDrawGoalPositions	= false;
@@ -23,130 +22,48 @@ void SoftBody::Update(float dt)
 {
 	if (m_bReady)
 	{
-		// Calculate the convex hull using the graham scan algorithm
-		if (m_bConvexHull == false)
+		// Graham scan
+		if (!m_bConvexHull)
 		{
 			m_bConvexHull = true;
-
-			std::sort(m_SoftBodyParticles.begin(), m_SoftBodyParticles.end(), SmallestY);
-			m_Pivot = m_SoftBodyParticles[0];
-
-			std::sort(m_SoftBodyParticles.begin() + 1, m_SoftBodyParticles.end(), PolarOrder);
-
-			m_ConvexHull.push(&m_SoftBodyParticles[0]);
-			m_ConvexHull.push(&m_SoftBodyParticles[1]);
-
-			for (unsigned int i = 2; i < m_SoftBodyParticles.size(); i++)
-			{
-				SoftBodyParticle* top = m_ConvexHull.top();
-				m_ConvexHull.pop();
-
-				while (CCWTurn(*m_ConvexHull.top(), *top, m_SoftBodyParticles[i]) != -1)
-				{
-					top = m_ConvexHull.top();
-					m_ConvexHull.pop();
-				}
-
-				m_ConvexHull.push(top);
-				m_ConvexHull.push(&m_SoftBodyParticles[i]);
-			}
+			GrahamScan::InitializeSingleton(m_SoftBodyParticles);
 		}
-
-		// Update all particles
-
+		
 		// Update external forces
-		if (GRAVITY_ON)
-		{
-			unsigned int iIndex;
-
-			for (iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
-			{
-				SoftBodyParticle& currentParticle = m_SoftBodyParticles[iIndex];
-
-				// Add gravity
-				if (currentParticle.Fixed) continue;
-				currentParticle.Velocity += GRAVITATIONAL_ACCELERATION * dt;
-				currentParticle.NewPosition = currentParticle.Position + currentParticle.Velocity * dt;
-				currentParticle.GoalPosition = currentParticle.OriginalPosition;
-			}
-		}
+		UpdateForces(dt);
 
 		// Collision detection against the container
-		unsigned int iIndex;
-		for (iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
-		{
-			SoftBodyParticle& currentParticle = m_SoftBodyParticles[iIndex];
-
-			if (currentParticle.NewPosition.x < SOFTBODYPARTICLE_LEFTLIMIT || currentParticle.NewPosition.x > SOFTBODYPARTICLE_RIGHTLIMIT)
-			{
-				currentParticle.NewPosition.x = currentParticle.Position.x - currentParticle.Velocity.x * dt * SOFTBODY_RESTITUTION_COEFF;
-				currentParticle.NewPosition.y = currentParticle.Position.y;
-			}
-
-			if (currentParticle.NewPosition.y < SOFTBODYPARTICLE_TOPLIMIT || currentParticle.NewPosition.y > SOFTBODYPARTICLE_BOTTOMLIMIT)
-			{
-				currentParticle.NewPosition.y = currentParticle.Position.y - currentParticle.Velocity.y * dt * SOFTBODY_RESTITUTION_COEFF;
-				currentParticle.NewPosition.x = currentParticle.Position.x;
-			}
-
-			currentParticle.NewPosition.x = glm::clamp(currentParticle.NewPosition.x, SOFTBODYPARTICLE_LEFTLIMIT, SOFTBODYPARTICLE_RIGHTLIMIT);
-			currentParticle.NewPosition.y = glm::clamp(currentParticle.NewPosition.y, SOFTBODYPARTICLE_TOPLIMIT, SOFTBODYPARTICLE_BOTTOMLIMIT);
-		}
+		UpdateCollision(dt);
 
 		// Project positions
 		ShapeMatching(dt);
 
-		// Integrate
-		float dt1 = 1.0f / dt;
+		Integrate(dt);
 
-		for (unsigned int iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
-		{
-			SoftBodyParticle& currentParticle = m_SoftBodyParticles[iIndex];
-
-			currentParticle.Velocity = (currentParticle.NewPosition - currentParticle.Position) * dt1;
-			currentParticle.Position = currentParticle.NewPosition;
-
-			currentParticle.UpdateShapePosition();
-		}
+		// Update the position of the bezier points
+		BezierCurve::GetInstance().UpdateBezierPoints(m_SoftBodyParticles);
 	}
 }
 
 void SoftBody::Draw(sf::RenderWindow& window)
-{
-	//if (m_bReady)
-	//{
-		// Draw all the particles
-		for (unsigned int iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
-		{
-			m_SoftBodyParticles[iIndex].Draw(window);
-		}
-	//}
-	
+{	
 	if (m_bReady)
 	{
-		// Draw the convex hull
-		int iConvexHullSize = m_ConvexHull.size();
-
-		std::stack<SoftBodyParticle*> tempStack = m_ConvexHull;
-		std::vector<sf::Vertex> lines;
-		SoftBodyParticle* top = nullptr;
-
-		while (tempStack.size() > 0)
+		// Draw bezier curves which links together all the soft body particles
+		if (m_bBezierCurve)
 		{
-			top = tempStack.top();
-			tempStack.pop();
-
-			lines.push_back(sf::Vertex(sf::Vector2f(top->Position.x, top->Position.y)));
-			if (tempStack.size() != 0)
-			{
-				lines.push_back(sf::Vertex(sf::Vector2f(tempStack.top()->Position.x, tempStack.top()->Position.y)));
-			}
-			else
-			{
-				lines.push_back(sf::Vertex(sf::Vector2f(lines[0].position.x, lines[0].position.y)));
-			}
+			std::vector<glm::vec2> bezierPoints;
+			// Calculate the array of points which form the bezier curve
+			BezierCurve::GetInstance().CalculateMulticurveBezierPoints(bezierPoints);
+			// Draw lines between the points in the array
+			BezierCurve::GetInstance().DrawBezierCurve(window, bezierPoints);
 		}
-		window.draw(&lines[0], iConvexHullSize * 2, sf::Lines);
+		
+		// Draw convex hull using the GrahamScan algorithm
+		if (m_bDrawConvexHull)
+		{
+			GrahamScan::GetInstance()->Draw(window);
+		}
 
 		// Draw the goal positions for all the particles
 		if (m_bDrawGoalPositions)
@@ -156,6 +73,14 @@ void SoftBody::Draw(sf::RenderWindow& window)
 			{
 				m_SoftBodyParticles[iIndex].DrawGoalShape(window);
 			}
+		}
+	}
+	else
+	{
+		// Draw all the particles during the setup stage
+		for (unsigned int iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
+		{
+			m_SoftBodyParticles[iIndex].Draw(window);
 		}
 	}
 }
@@ -267,26 +192,62 @@ void SoftBody::ShapeMatching(float dt)
 	}
 }
 
-// ----------------------------------------------------------
-
-void SoftBodyParticle::UpdateShapePosition()
+void SoftBody::Integrate(float dt)
 {
-	// Update the position of the shape
-	m_Shape.setPosition(sf::Vector2f(Position.x, Position.y));
+	// Integrate
+	float dt1 = 1.0f / dt;
+
+	for (unsigned int iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
+	{
+		SoftBodyParticle& currentParticle = m_SoftBodyParticles[iIndex];
+
+		currentParticle.Velocity = (currentParticle.NewPosition - currentParticle.Position) * dt1;
+		currentParticle.Position = currentParticle.NewPosition;
+
+		currentParticle.UpdateShapePosition();
+	}
 }
 
-void SoftBodyParticle::Draw(sf::RenderWindow& window)
+void SoftBody::UpdateCollision(float dt)
 {
-	window.draw(m_Shape);
+	unsigned int iIndex;
+	for (iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
+	{
+		SoftBodyParticle& currentParticle = m_SoftBodyParticles[iIndex];
+
+		if (currentParticle.NewPosition.x < SOFTBODYPARTICLE_LEFTLIMIT || currentParticle.NewPosition.x > SOFTBODYPARTICLE_RIGHTLIMIT)
+		{
+			currentParticle.NewPosition.x = currentParticle.Position.x - currentParticle.Velocity.x * dt * SOFTBODY_RESTITUTION_COEFF;
+			currentParticle.NewPosition.y = currentParticle.Position.y;
+		}
+
+		if (currentParticle.NewPosition.y < SOFTBODYPARTICLE_TOPLIMIT || currentParticle.NewPosition.y > SOFTBODYPARTICLE_BOTTOMLIMIT)
+		{
+			currentParticle.NewPosition.y = currentParticle.Position.y - currentParticle.Velocity.y * dt * SOFTBODY_RESTITUTION_COEFF;
+			currentParticle.NewPosition.x = currentParticle.Position.x;
+		}
+
+		currentParticle.NewPosition.x = glm::clamp(currentParticle.NewPosition.x, SOFTBODYPARTICLE_LEFTLIMIT, SOFTBODYPARTICLE_RIGHTLIMIT);
+		currentParticle.NewPosition.y = glm::clamp(currentParticle.NewPosition.y, SOFTBODYPARTICLE_TOPLIMIT, SOFTBODYPARTICLE_BOTTOMLIMIT);
+	}
 }
 
-void SoftBodyParticle::UpdateGoalShapePosition()
+void SoftBody::UpdateForces(float dt)
 {
-	// Update the goal position of the shape
-	m_GoalPositionShape.setPosition(sf::Vector2f(GoalPosition.x, GoalPosition.y));
-}
+	// Update external forces
+	if (GRAVITY_ON)
+	{
+		unsigned int iIndex;
 
-void SoftBodyParticle::DrawGoalShape(sf::RenderWindow& window)
-{
-	window.draw(m_GoalPositionShape);
+		for (iIndex = 0; iIndex < m_SoftBodyParticles.size(); iIndex++)
+		{
+			SoftBodyParticle& currentParticle = m_SoftBodyParticles[iIndex];
+
+			// Add gravity
+			if (currentParticle.Fixed) continue;
+			currentParticle.Velocity += GRAVITATIONAL_ACCELERATION * dt;
+			currentParticle.NewPosition = currentParticle.Position + currentParticle.Velocity * dt;
+			currentParticle.GoalPosition = currentParticle.OriginalPosition;
+		}
+	}
 }

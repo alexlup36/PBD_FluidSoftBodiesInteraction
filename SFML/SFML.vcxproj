@@ -40,7 +40,7 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PlatformToolset>v120</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PlatformToolset>v120</PlatformToolset>
@@ -104,7 +104,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\Lib\lib64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-audio-d.lib;sfml-graphics-d.lib;sfml-main-d.lib;sfml-network-d.lib;sfml-system-d.lib;sfml-window-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freetype.lib;glew.lib;jpeg.lib;openal32.lib;sfml-audio-d.lib;sfml-graphics-d.lib;sfml-main-d.lib;sfml-network-d.lib;sfml-system-d.lib;sfml-window-d.lib;sndfile.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)\Lib\include</AdditionalIncludeDirectories>
@@ -122,19 +122,27 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Application.cpp" />
+    <ClCompile Include="FluidSimulation.cpp" />
+    <ClCompile Include="BezierCurve.cpp" />
+    <ClCompile Include="GrahamScan.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MarchingSquares.cpp" />
     <ClCompile Include="Mat2Utility.cpp" />
     <ClCompile Include="Particle.cpp" />
     <ClCompile Include="SoftBody.cpp" />
+    <ClCompile Include="SoftBodyParticle.cpp" />
     <ClCompile Include="SpatialPartition.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application.h" />
+    <ClInclude Include="FluidSimulation.h" />
+    <ClInclude Include="BezierCurve.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="GrahamScan.h" />
+    <ClInclude Include="MarchingSquares.h" />
     <ClInclude Include="Mat2Utility.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="SoftBody.h" />
+    <ClInclude Include="SoftBodyParticle.h" />
     <ClInclude Include="SpatialPartition.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

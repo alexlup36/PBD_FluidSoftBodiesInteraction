@@ -11,6 +11,12 @@
 
 #define EPS 0.001f
 
+// Window
+const sf::Vector2i WindowResolution = sf::Vector2i(1920, 1080);
+const float HorizontalOffset		= 100.0f;
+const float VerticalOffsetTop		= 150.0f;
+const float VerticalOffsetBottom	= 50.0f; 
+
 // Simulation time
 const float TICKS_PER_SECOND	= 30.0f;
 const float SKIP_TICKS			= 1.0f / TICKS_PER_SECOND;
@@ -18,24 +24,25 @@ const float FIXED_DELTA			= 1.0f / 30.0f;
 const int MAX_FRAMESKIP			= 1;
 const int SPEEDMULTIPLIER		= 2;
 
-const int PARTICLE_WIDTH_COUNT = 40;
-const int PARTICLE_HEIGHT_COUNT = 40;
+const int PARTICLE_WIDTH_COUNT = 60;
+const int PARTICLE_HEIGHT_COUNT = 60;
 const int PARTICLE_COUNT = PARTICLE_WIDTH_COUNT * PARTICLE_HEIGHT_COUNT;
-const float PARTICLE_RADIUS = 5.0f;
+const float PARTICLE_RADIUS = 3.0f;
 
 // Container dimensions
-const float CONTAINER_WIDTH = 1100.0f;
-const float CONTAINER_HEIGHT = 550;
+const float CONTAINER_WIDTH = WindowResolution.x - 2.0f * HorizontalOffset;
+const float CONTAINER_HEIGHT = WindowResolution.y - (VerticalOffsetTop + VerticalOffsetBottom);
 
 // Spatial partitioning
 const float CELL_SIZE = 4.0f * PARTICLE_RADIUS;// 3685.5f * pow((float)PARTICLE_COUNT, -0.464f);
 const float CELL_COLS = std::trunc(CONTAINER_WIDTH / CELL_SIZE);
 const float CELL_ROWS = std::trunc(CONTAINER_HEIGHT / CELL_SIZE);
+const float TOTAL_CELLS = CELL_COLS * CELL_ROWS;
 
 // Fluid limits
-const float WALL_LEFTLIMIT			= 100.0f;
+const float WALL_LEFTLIMIT			= HorizontalOffset;
 const float WALL_RIGHTLIMIT			= WALL_LEFTLIMIT + CELL_COLS * CELL_SIZE;
-const float WALL_TOPLIMIT			= 200.0f;
+const float WALL_TOPLIMIT			= VerticalOffsetTop;
 const float WALL_BOTTOMLIMIT		= WALL_TOPLIMIT + CELL_ROWS * CELL_SIZE;
 
 // Container corners
@@ -50,13 +57,15 @@ const float PARTICLE_RIGHTLIMIT		= WALL_RIGHTLIMIT - PARTICLE_RADIUS - 1.0f;
 const float PARTICLE_TOPLIMIT		= WALL_TOPLIMIT + PARTICLE_RADIUS + 1.0f;
 const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS - 1.0f;
 
-// Forces
 const glm::vec2 GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
 const bool GRAVITY_ON = true;
 const bool XSPH_VISCOSITY = true;
 const bool ARTIFICIAL_PRESSURE_TERM = true;
 const bool FLUID_SIMULATION = true;
+const bool FLUIDRENDERING_PARTICLE = true;
+const bool FLUIDRENDERING_MARCHINGSQUARES = false;
 const bool PBD_COLLISION = false;
+const bool SOFTBODY_SIMULATION = false;
 
 // Physics constants
 const float VELOCITY_DAMPING = 0.999f;
@@ -97,5 +106,10 @@ const float SOFTBODYPARTICLE_LEFTLIMIT = WALL_LEFTLIMIT + SOFTBODY_PARTICLE_RADI
 const float SOFTBODYPARTICLE_RIGHTLIMIT = WALL_RIGHTLIMIT - SOFTBODY_PARTICLE_RADIUS;
 const float SOFTBODYPARTICLE_TOPLIMIT = WALL_TOPLIMIT + SOFTBODY_PARTICLE_RADIUS;
 const float SOFTBODYPARTICLE_BOTTOMLIMIT = WALL_BOTTOMLIMIT - SOFTBODY_PARTICLE_RADIUS;
+
+// Uniform box division fluid rendering using marching squares
+const unsigned int BOXSIZE = (unsigned int)PARTICLE_RADIUS;
+const unsigned int MAPHEIGHT = (unsigned int)(WindowResolution.y / BOXSIZE) - 1;
+const unsigned int MAPWIDTH = (unsigned int)(WindowResolution.x / BOXSIZE) - 1;
 
 #endif // COMMON_H

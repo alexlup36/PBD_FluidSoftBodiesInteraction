@@ -3,18 +3,9 @@
 #include <math.h>
 
 
-SpatialPartition::SpatialPartition()
-{
-}
-
-
-SpatialPartition::~SpatialPartition()
-{
-}
-
 void SpatialPartition::Setup()
 {
-	for (int i = 0; i < CELL_COLS * CELL_ROWS; i++)
+	for (int i = 0; i < TOTAL_CELLS; i++)
 	{
 		m_Buckets.insert(std::pair<int, std::vector<Particle*>>(i, std::vector<Particle*>()));
 	}
@@ -24,7 +15,7 @@ void SpatialPartition::ClearBuckets()
 {
 	m_Buckets.clear();
 
-	Setup();
+	//Setup();
 }
 
 void SpatialPartition::RegisterObject(Particle* particle)
@@ -107,7 +98,9 @@ void/*std::vector<Particle*>*/ SpatialPartition::GetNeighbors(const Particle& pa
 	int iCount = 0;
 	for each (int id in cellIDsList)
 	{
-		for each (Particle* pParticle in m_Buckets[id])
+		auto currentBucket = m_Buckets[id];
+
+		for each (Particle* pParticle in currentBucket)
 		{
 			iCount++;
 		}
@@ -117,7 +110,9 @@ void/*std::vector<Particle*>*/ SpatialPartition::GetNeighbors(const Particle& pa
 
 	for each (int id in cellIDsList)
 	{
-		for each (Particle* pParticle in m_Buckets[id])
+		auto currentBucket = m_Buckets[id];
+
+		for each (Particle* pParticle in currentBucket)
 		{
 			if (pParticle->GetParticleIndex() != particle.GetParticleIndex())
 			{

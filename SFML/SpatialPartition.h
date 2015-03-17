@@ -11,8 +11,12 @@
 class SpatialPartition
 {
 public:
-	SpatialPartition();
-	~SpatialPartition();
+
+	static SpatialPartition& GetInstance()
+	{
+		static SpatialPartition instance;
+		return instance;
+	}
 
 	void Setup();
 	void ClearBuckets();
@@ -20,6 +24,15 @@ public:
 	void/*std::vector<Particle*>*/ GetNeighbors(const Particle& particle, std::vector<Particle*>& nearbyParticleList);
 
 private:
+	// -----------------------------------------------------------------------------
+	// Hide constructor for singleton implementation
+	SpatialPartition() {};
+
+	// Delete unneeded copy constructor and assignment operator
+	SpatialPartition(SpatialPartition const&) = delete;
+	void operator=(SpatialPartition const&) = delete;
+	// -----------------------------------------------------------------------------
+
 	std::map<int, std::vector<Particle*>> m_Buckets;
 
 	void/*std::vector<int>*/ GetIdForObject(const Particle& particle, std::set<int>& cellIDList);

@@ -3,7 +3,7 @@
 #include <limits>
 
 #include "Common.h"
-#include "Application.h"
+#include "FluidSimulation.h"
 #include "SoftBody.h"
 
 void DrawContainer(sf::RenderWindow& window)
@@ -31,12 +31,8 @@ int main()
 {
 	// ---------------------------------------------------------------------------
 	// Window
-	bool bIsFullScreen = false;
-
-	sf::Vector2i windowResolution = sf::Vector2i(1280, 800);
-	sf::Vector2i fullscreenResolution = sf::Vector2i(1920, 1080);
-
-	sf::RenderWindow window(sf::VideoMode(windowResolution.x, windowResolution.y), "SFML window");
+	bool IsFullScreen = false;
+	sf::RenderWindow window(sf::VideoMode(WindowResolution.x, WindowResolution.y), "SFML window");
 	window.setFramerateLimit(60);
 	sf::Color clearColor = sf::Color::Black;
 
@@ -46,12 +42,10 @@ int main()
 	sf::Time currentTime = timer.getElapsedTime();
 	sf::Time newTime;
 	float fTimeAccumulator = 0.0f;
-	int iNextGameTick = SKIP_TICKS * 3.0f;
+	int iNextGameTick = (int)(SKIP_TICKS * 3.0f);
 
 	// ---------------------------------------------------------------------------
 	// Mouse stats
-	bool bLeftMouseClickPressed = false;
-	bool bRightMouseClickPressed = false;
 	int iWheelAccumulator = 0;
 
 	sf::Vector2i currentMousePosition = sf::Vector2i();
@@ -71,10 +65,12 @@ int main()
 
 	// ---------------------------------------------------------------------------
 	// Application - fluid implementation
-	std::shared_ptr<Application> testApp = std::make_shared<Application>();
-	testApp->Initialize(window);
-	testApp->BuildParticleSystem(PARTICLE_COUNT);
-
+	if (FLUID_SIMULATION)
+	{
+		FluidSimulation::InitializeSingleton();
+		FluidSimulation::GetInstance()->BuildParticleSystem(PARTICLE_COUNT);
+	}
+	
 	// ---------------------------------------------------------------------------
 	// Soft-body simulation
 	bool bSoftBodyInput = false;
@@ -84,7 +80,7 @@ int main()
 	SoftBodyParticle* softBodyControlledParticle = nullptr;
 	float fMinimumPickingDistance = 50.0f;
 	int iCurrentSBIndex = 0;
-
+	
 	// ---------------------------------------------------------------------------
 
 	// Main loop
@@ -109,19 +105,19 @@ int main()
 						// Switch between window and full screen
 						case sf::Keyboard::Return:
 						{
-							if (bIsFullScreen)
+							if (IsFullScreen)
 							{
-								window.create(sf::VideoMode(windowResolution.x, windowResolution.y), 
+								window.create(sf::VideoMode(WindowResolution.x, WindowResolution.y), 
 									"SFML FullScreen", 
 									sf::Style::Default);
-								bIsFullScreen = false;
+								IsFullScreen = false;
 							}
 							else
 							{
-								window.create(sf::VideoMode(fullscreenResolution.x, fullscreenResolution.y),
+								window.create(sf::VideoMode(1920, 1080),
 									"SFML FullScreen", 
 									sf::Style::Fullscreen);
-								bIsFullScreen = true;
+								IsFullScreen = true;
 							}
 							break;
 						}
@@ -135,25 +131,32 @@ int main()
 						// Soft-body creation
 						case sf::Keyboard::S:
 						{
-							std::cout << "Listening for clicks to add particles in the soft body. Click to add particles in the soft-body." << std::endl;
-							bSoftBodyInput = true;
+							if (SOFTBODY_SIMULATION)
+							{
+								std::cout << "Listening for clicks to add particles in the soft body. Click to add particles in the soft-body." << std::endl;
+								bSoftBodyInput = true;
 
-							// Initialize the current soft-body instance
-							softBodyInstance = std::make_shared<SoftBody>();
-							// Add the soft body instance to the list of soft bodies
-							SoftBodiesList.push_back(softBodyInstance);
-
+								// Initialize the current soft-body instance
+								softBodyInstance = std::make_shared<SoftBody>();
+								// Add the soft body instance to the list of soft bodies
+								SoftBodiesList.push_back(softBodyInstance);
+							}
+							
 							break;
 						}
 
 						// Soft-body reset
 						case sf::Keyboard::R:
 						{
-							if (softBodyInstance != nullptr)
+							if (SOFTBODY_SIMULATION)
 							{
-								// Reset the particle list of the soft-body
-								softBodyInstance->ClearSoftBodyParticleList();
+								if (softBodyInstance != nullptr)
+								{
+									// Reset the particle list of the soft-body
+									softBodyInstance->ClearSoftBodyParticleList();
+								}
 							}
+							
 
 							break;
 						}
@@ -169,23 +172,20 @@ int main()
 				{
 					if (event.key.code == sf::Mouse::Left)
 					{
-						bLeftMouseClickPressed = false;
-
-						// Soft-body mouse control
-						if (softBodyInstance != nullptr)
+						if (SOFTBODY_SIMULATION)
 						{
-							if (softBodyInstance->IsReady() && softBodyControlledParticle)
+							// Soft-body mouse control
+							if (softBodyInstance != nullptr)
 							{
-								// Reset the color of the controlled particle
-								softBodyControlledParticle->SetDefaultColor();
-								// Reset the pointer to the controlled particle
-								softBodyControlledParticle = nullptr;
+								if (softBodyInstance->IsReady() && softBodyControlledParticle)
+								{
+									// Reset the color of the controlled particle
+									softBodyControlledParticle->SetDefaultColor();
+									// Reset the pointer to the controlled particle
+									softBodyControlledParticle = nullptr;
+								}
 							}
 						}
-					}
-					if (event.key.code == sf::Mouse::Right)
-					{
-						bRightMouseClickPressed = false;
 					}
 
 					break;
@@ -195,41 +195,58 @@ int main()
 				{
 					if (event.key.code == sf::Mouse::Left)
 					{
-						bLeftMouseClickPressed = true;
-
 						// ------------------------------------------------------------------------------------------------
-						// Soft-body mouse control
-						if (bSoftBodyInput == false)
+						// Soft body add particle
+						if (SOFTBODY_SIMULATION)
 						{
-							glm::vec2 mouseClickPos = glm::vec2(currentMousePosition.x, currentMousePosition.y);
-
-							float fMinimumDistance = std::numeric_limits<float>::max();
-							for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+							if (bSoftBodyInput)
 							{
-								// Get the particle list in the current soft-body
-								std::vector<SoftBodyParticle>& SoftBodyParticleList = softBody->GetParticleList();
+								// Clamp the click position to the container limits
+								currentMousePosition.x = (int)glm::clamp((float)currentMousePosition.x, WALL_LEFTLIMIT, WALL_RIGHTLIMIT);
+								currentMousePosition.y = (int)glm::clamp((float)currentMousePosition.y, WALL_TOPLIMIT, WALL_BOTTOMLIMIT);
 
-								for (unsigned int i = 0; i < SoftBodyParticleList.size(); i++)
+								// Create a soft body particle
+								SoftBodyParticle sbParticle = SoftBodyParticle(glm::vec2(currentMousePosition.x,
+									currentMousePosition.y));
+
+								// Add the newly created particle to the soft-body collection
+								softBodyInstance->AddSoftBodyParticle(sbParticle);
+							}
+
+							// ------------------------------------------------------------------------------------------------
+							// Soft-body mouse control
+							if (bSoftBodyInput == false)
+							{
+								glm::vec2 mouseClickPos = glm::vec2(currentMousePosition.x, currentMousePosition.y);
+
+								float fMinimumDistance = std::numeric_limits<float>::max();
+								for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
 								{
-									SoftBodyParticle& currentParticle = SoftBodyParticleList[i];
-									float fDistance = glm::length(mouseClickPos - currentParticle.Position);
+									// Get the particle list in the current soft-body
+									std::vector<SoftBodyParticle>& SoftBodyParticleList = softBody->GetParticleList();
 
-									if (fDistance < fMinimumDistance)
+									for (unsigned int i = 0; i < SoftBodyParticleList.size(); i++)
 									{
-										fMinimumDistance = fDistance;
-										softBodyControlledParticle = &currentParticle;
-										softBodyInstance = softBody;
+										SoftBodyParticle& currentParticle = SoftBodyParticleList[i];
+										float fDistance = glm::length(mouseClickPos - currentParticle.Position);
+
+										if (fDistance < fMinimumDistance)
+										{
+											fMinimumDistance = fDistance;
+											softBodyControlledParticle = &currentParticle;
+											softBodyInstance = softBody;
+										}
 									}
 								}
-							}
 
-							if (fMinimumDistance >= fMinimumPickingDistance)
-							{
-								softBodyControlledParticle = nullptr;
-							}
-							else
-							{
-								softBodyControlledParticle->SetControlledColor();
+								if (fMinimumDistance >= fMinimumPickingDistance)
+								{
+									softBodyControlledParticle = nullptr;
+								}
+								else
+								{
+									softBodyControlledParticle->SetControlledColor();
+								}
 							}
 						}
 						
@@ -237,35 +254,14 @@ int main()
 					}
 					if (event.key.code == sf::Mouse::Right)
 					{
-						bRightMouseClickPressed = true;
-					}
+						if (SOFTBODY_SIMULATION)
+						{
+							// End soft body input
+							bSoftBodyInput = false;
+							softBodyInstance->SetReady(true);
 
-					// ------------------------------------------------------------------------------------------------
-					// Soft body add particle
-
-					if (bLeftMouseClickPressed && bSoftBodyInput)
-					{
-						// Clamp the click position to the container limits
-						currentMousePosition.x = (int)glm::clamp((float)currentMousePosition.x, WALL_LEFTLIMIT, WALL_RIGHTLIMIT);
-						currentMousePosition.y = (int)glm::clamp((float)currentMousePosition.y, WALL_TOPLIMIT, WALL_BOTTOMLIMIT);
-						
-						// Create a soft body particle
-						SoftBodyParticle sbParticle = SoftBodyParticle(glm::vec2(currentMousePosition.x,
-							currentMousePosition.y));
-
-						// Add the newly created particle to the soft-body collection
-						softBodyInstance->AddSoftBodyParticle(sbParticle);
-					}
-
-					// ------------------------------------------------------------------------------------------------
-
-					if (bRightMouseClickPressed)
-					{
-						// End soft body input
-						bSoftBodyInput = false;
-						softBodyInstance->SetReady(true);
-
-						std::cout << "Soft body input ended. Soft body created." << std::endl; 
+							std::cout << "Soft body input ended. Soft body created." << std::endl;
+						}
 					}
 
 					// ------------------------------------------------------------------------------------------------
@@ -296,12 +292,15 @@ int main()
 		// Get mouse position
 		currentMousePosition = sf::Mouse::getPosition(window);
 
-		// Update the position of the controlled particle
-		if (softBodyControlledParticle != nullptr)
+		if (SOFTBODY_SIMULATION)
 		{
-			softBodyControlledParticle->Position = glm::vec2(currentMousePosition.x, currentMousePosition.y);
+			// Update the position of the controlled particle
+			if (softBodyControlledParticle != nullptr)
+			{
+				softBodyControlledParticle->Position = glm::vec2(currentMousePosition.x, currentMousePosition.y);
+			}
 		}
-
+		
 		// Handle simulation time
 		newTime = timer.getElapsedTime();
 		sf::Time intervalTime = newTime - currentTime;
@@ -318,15 +317,21 @@ int main()
 		{
 			for (int speedCounter = 0; speedCounter < SPEEDMULTIPLIER; speedCounter++)
 			{
-				// Fluid application update 
-				testApp->Update(window, FIXED_DELTA);
-
-				// Soft-bodies update
-				/*for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+				if (FLUID_SIMULATION)
 				{
-				softBody->Update(time.asSeconds());
-				}*/
-
+					// Fluid application update 
+					FluidSimulation::GetInstance()->Update(window, FIXED_DELTA);
+				}
+				
+				if (SOFTBODY_SIMULATION)
+				{
+					// Soft-bodies update
+					for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+					{
+						softBody->Update(FIXED_DELTA);
+					}
+				}
+				
 				std::string fps = "FPS: " + std::to_string(1.0f / intervalTime.asSeconds()) + "\n";
 				std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
 				std::string particleCount = "Particles: " + std::to_string(PARTICLE_COUNT) + "\n";
@@ -336,20 +341,28 @@ int main()
 				stats.setString(milisecPerFrame + fps + particleCount + gravityOn);
 			}
 
-			iNextGameTick += SKIP_TICKS * 3;
+			iNextGameTick += (int)(SKIP_TICKS * 3);
 			loops++;
 		}
 
 		// Container draw
 		DrawContainer(window);
-		// Fluid application draw
-		testApp->Draw(window);
-		// Soft-bodies draw
-		/*for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+		
+		if (FLUID_SIMULATION)
 		{
-		softBody->Draw(window);
-		}*/
-
+			// Fluid application draw
+			FluidSimulation::GetInstance()->Draw(window);
+		}
+		
+		if (SOFTBODY_SIMULATION)
+		{
+			// Soft-bodies draw
+			for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+			{
+				softBody->Draw(window);
+			}
+		}
+		
 		window.draw(stats);
 
 		// --------------------------------------------------------------------------
