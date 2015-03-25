@@ -1,42 +1,41 @@
 #include "GrahamScan.h"
 
-SoftBodyParticle GrahamScan::m_Pivot;
+DeformableParticle* GrahamScan::m_Pivot = nullptr;
 GrahamScan* GrahamScan::theInstance = nullptr;
 
-GrahamScan::GrahamScan(std::vector<SoftBodyParticle>& softBodyParticleList)
+GrahamScan::GrahamScan(std::vector<DeformableParticle*>& softBodyParticleList)
 {
 	// Calculate the convex hull using the graham scan algorithm
 	std::sort(softBodyParticleList.begin(), softBodyParticleList.end(), SmallestY);
-	GrahamScan::m_Pivot = softBodyParticleList[0];
 
 	std::sort(softBodyParticleList.begin() + 1, softBodyParticleList.end(), PolarOrder);
 
-	m_ConvexHull.push(&softBodyParticleList[0]);
-	m_ConvexHull.push(&softBodyParticleList[1]);
+	m_ConvexHull.push(softBodyParticleList[0]);
+	m_ConvexHull.push(softBodyParticleList[1]);
 
 	for (unsigned int i = 2; i < softBodyParticleList.size(); i++)
 	{
-		SoftBodyParticle* top = m_ConvexHull.top();
+		DeformableParticle* top = m_ConvexHull.top();
 		m_ConvexHull.pop();
 
-		while (CCWTurn(*m_ConvexHull.top(), *top, softBodyParticleList[i]) != -1)
+		while (m_ConvexHull.size() > 0 && CCWTurn(*m_ConvexHull.top(), *top, *softBodyParticleList[i]) != -1)
 		{
 			top = m_ConvexHull.top();
 			m_ConvexHull.pop();
 		}
-
+		
 		m_ConvexHull.push(top);
-		m_ConvexHull.push(&softBodyParticleList[i]);
+		m_ConvexHull.push(softBodyParticleList[i]);
 	}
 }
 
 void GrahamScan::Draw(sf::RenderWindow& window)
 {
 	// Draw the convex hull
-	std::stack<SoftBodyParticle*> tempStack = m_ConvexHull;
+	std::stack<DeformableParticle*> tempStack = m_ConvexHull;
 	int iConvexHullSize = m_ConvexHull.size();
 	std::vector<sf::Vertex> lines;
-	SoftBodyParticle* top = nullptr;
+	DeformableParticle* top = nullptr;
 
 	while (tempStack.size() > 0)
 	{
@@ -57,22 +56,22 @@ void GrahamScan::Draw(sf::RenderWindow& window)
 }
 
 // Graham scan util - friends
-bool SmallestY(SoftBodyParticle& p1, SoftBodyParticle& p2)
+bool SmallestY(DeformableParticle* p1, DeformableParticle* p2)
 {
-	if (p1.Position.y != p2.Position.y)
+	if (p1->Position.y != p2->Position.y)
 	{
-		return p1.Position.y > p2.Position.y;
+		return p1->Position.y > p2->Position.y;
 	}
-	return p1.Position.x < p2.Position.x;
+	return p1->Position.x < p2->Position.x;
 }
 
-bool PolarOrder(SoftBodyParticle& p1, SoftBodyParticle& p2)
+bool PolarOrder(DeformableParticle* p1, DeformableParticle* p2)
 {
-	int order = GrahamScan::CCWTurn(GrahamScan::m_Pivot, p1, p2);
+	int order = GrahamScan::CCWTurn(*GrahamScan::m_Pivot, *p1, *p2);
 	if (order == 0)
 	{
-		return glm::length(GrahamScan::m_Pivot.Position - p1.Position) <
-			glm::length(GrahamScan::m_Pivot.Position - p2.Position);
+		return glm::length(GrahamScan::m_Pivot->Position - p1->Position) <
+			glm::length(GrahamScan::m_Pivot->Position - p2->Position);
 	}
 	return order == -1;
 }

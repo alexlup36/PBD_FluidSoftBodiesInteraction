@@ -7,7 +7,7 @@ void SpatialPartition::Setup()
 {
 	for (int i = 0; i < TOTAL_CELLS; i++)
 	{
-		m_Buckets.insert(std::pair<int, std::vector<Particle*>>(i, std::vector<Particle*>()));
+		m_Buckets.insert(std::pair<int, std::vector<FluidParticle*>>(i, std::vector<FluidParticle*>()));
 	}
 }
 
@@ -18,10 +18,9 @@ void SpatialPartition::ClearBuckets()
 	//Setup();
 }
 
-void SpatialPartition::RegisterObject(Particle* particle)
+void SpatialPartition::RegisterObject(FluidParticle* particle)
 {
 	// Get a list of ids of the cell the current particle is in
-	//std::vector<int> cellIDsList = GetIdForObject(*particle);
 	std::set<int> cellIDsList;
 	GetIdForObject(*particle, cellIDsList);
 
@@ -31,66 +30,35 @@ void SpatialPartition::RegisterObject(Particle* particle)
 	}
 }
 
-void/*std::vector<int>*/ SpatialPartition::GetIdForObject(const Particle& particle, std::set<int>& cellIDList)
+void SpatialPartition::GetIdForObject(const FluidParticle& particle, std::set<int>& cellIDList)
 {
-	//std::vector<int> cellIDList;
-
-	float fXPos = particle.GetLocalPosition().x;
-	float fYPos = particle.GetLocalPosition().y;
-	float fRadius = particle.GetRadius();
+	float fXPos = particle.LocalPosition.x;
+	float fYPos = particle.LocalPosition.y;
+	float fRadius = particle.Radius;
 
 	// Top left corner
 	int iCellIndex = (int)(std::floor((fXPos - fRadius) / CELL_SIZE) +
 		std::floor((fYPos - fRadius) / CELL_SIZE) * CELL_COLS);
-
-	// The value is not in the list
-	/*if (std::find(cellIDList.begin(), cellIDList.end(), iCellIndex) == cellIDList.end())
-	{
-		cellIDList.push_back(iCellIndex);
-	}*/
 	cellIDList.insert(iCellIndex);
 
 	// Top right corner
 	iCellIndex = (int)(std::floor((fXPos + fRadius) / CELL_SIZE) +
 		std::floor((fYPos - fRadius) / CELL_SIZE) * CELL_COLS);
-
-	// The value is not in the list
-	/*if (std::find(cellIDList.begin(), cellIDList.end(), iCellIndex) == cellIDList.end())
-	{
-		cellIDList.push_back(iCellIndex);
-	}*/
 	cellIDList.insert(iCellIndex);
 
 	// Bottom left corner
 	iCellIndex = (int)(std::floor((fXPos - fRadius) / CELL_SIZE) +
 		std::floor((fYPos + fRadius) / CELL_SIZE) * CELL_COLS);
-
-	// The value is not in the list
-	/*if (std::find(cellIDList.begin(), cellIDList.end(), iCellIndex) == cellIDList.end())
-	{
-		cellIDList.push_back(iCellIndex);
-	}*/
 	cellIDList.insert(iCellIndex);
 
 	// Bottom right corner
 	iCellIndex = (int)(std::floor((fXPos + fRadius) / CELL_SIZE) +
 		std::floor((fYPos + fRadius) / CELL_SIZE) * CELL_COLS);
-
-	// The value is not in the list
-	/*if (std::find(cellIDList.begin(), cellIDList.end(), iCellIndex) == cellIDList.end())
-	{
-		cellIDList.push_back(iCellIndex);
-	}*/
 	cellIDList.insert(iCellIndex);
-
-	//return cellIDList;
 }
 
-void/*std::vector<Particle*>*/ SpatialPartition::GetNeighbors(const Particle& particle, std::vector<Particle*>& nearbyParticleList)
+void SpatialPartition::GetNeighbors(const FluidParticle& particle, std::vector<FluidParticle*>& nearbyParticleList)
 {
-	//std::vector<Particle*> nearbyParticleList;
-
-	//std::vector<int> cellIDsList = GetIdForObject(particle);
 	std::set<int> cellIDsList;
 	GetIdForObject(particle, cellIDsList);
 
@@ -100,7 +68,7 @@ void/*std::vector<Particle*>*/ SpatialPartition::GetNeighbors(const Particle& pa
 	{
 		auto currentBucket = m_Buckets[id];
 
-		for each (Particle* pParticle in currentBucket)
+		for each (FluidParticle* pParticle in currentBucket)
 		{
 			iCount++;
 		}
@@ -112,15 +80,12 @@ void/*std::vector<Particle*>*/ SpatialPartition::GetNeighbors(const Particle& pa
 	{
 		auto currentBucket = m_Buckets[id];
 
-		for each (Particle* pParticle in currentBucket)
+		for each (FluidParticle* pParticle in currentBucket)
 		{
-			if (pParticle->GetParticleIndex() != particle.GetParticleIndex())
+			if (pParticle->Index != particle.Index)
 			{
 				nearbyParticleList.push_back(pParticle);
-				//nearbyParticleList[iIndex++] = pParticle;
 			}
 		}
 	}
-
-	//return nearbyParticleList;
 }

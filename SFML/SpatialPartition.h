@@ -6,7 +6,7 @@
 #include <set>
 
 #include "Common.h"
-#include "Particle.h"
+#include "FluidParticle.h"
 
 class SpatialPartition
 {
@@ -20,8 +20,8 @@ public:
 
 	void Setup();
 	void ClearBuckets();
-	void RegisterObject(Particle* particle);
-	void/*std::vector<Particle*>*/ GetNeighbors(const Particle& particle, std::vector<Particle*>& nearbyParticleList);
+	void RegisterObject(FluidParticle* particle);
+	void GetNeighbors(const FluidParticle& particle, std::vector<FluidParticle*>& nearbyParticleList);
 
 private:
 	// -----------------------------------------------------------------------------
@@ -33,9 +33,9 @@ private:
 	void operator=(SpatialPartition const&) = delete;
 	// -----------------------------------------------------------------------------
 
-	std::map<int, std::vector<Particle*>> m_Buckets;
+	std::map<int, std::vector<FluidParticle*>> m_Buckets;
 
-	void/*std::vector<int>*/ GetIdForObject(const Particle& particle, std::set<int>& cellIDList);
+	void GetIdForObject(const FluidParticle& particle, std::set<int>& cellIDList);
 };
 
 #endif // SPATIAL_PARTITION

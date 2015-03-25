@@ -65,10 +65,13 @@ int main()
 
 	// ---------------------------------------------------------------------------
 	// Application - fluid implementation
+	std::vector<std::shared_ptr<FluidSimulation>> FluidSimulationList;
+
 	if (FLUID_SIMULATION)
 	{
-		FluidSimulation::InitializeSingleton();
-		FluidSimulation::GetInstance()->BuildParticleSystem(PARTICLE_COUNT);
+		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>();
+		fluidSim->BuildParticleSystem(PARTICLE_COUNT);
+		FluidSimulationList.push_back(fluidSim);
 	}
 	
 	// ---------------------------------------------------------------------------
@@ -77,7 +80,7 @@ int main()
 
 	std::vector<std::shared_ptr<SoftBody>> SoftBodiesList;
 	std::shared_ptr<SoftBody> softBodyInstance = nullptr;
-	SoftBodyParticle* softBodyControlledParticle = nullptr;
+	DeformableParticle* deformableControlledParticle = nullptr;
 	float fMinimumPickingDistance = 50.0f;
 	int iCurrentSBIndex = 0;
 	
@@ -177,12 +180,12 @@ int main()
 							// Soft-body mouse control
 							if (softBodyInstance != nullptr)
 							{
-								if (softBodyInstance->IsReady() && softBodyControlledParticle)
+								if (softBodyInstance->IsReady() && deformableControlledParticle)
 								{
 									// Reset the color of the controlled particle
-									softBodyControlledParticle->SetDefaultColor();
+									deformableControlledParticle->SetDefaultColor();
 									// Reset the pointer to the controlled particle
-									softBodyControlledParticle = nullptr;
+									deformableControlledParticle = nullptr;
 								}
 							}
 						}
@@ -206,11 +209,11 @@ int main()
 								currentMousePosition.y = (int)glm::clamp((float)currentMousePosition.y, WALL_TOPLIMIT, WALL_BOTTOMLIMIT);
 
 								// Create a soft body particle
-								SoftBodyParticle sbParticle = SoftBodyParticle(glm::vec2(currentMousePosition.x,
-									currentMousePosition.y));
+								DeformableParticle* sbParticle = new DeformableParticle(glm::vec2(currentMousePosition.x,
+									currentMousePosition.y), softBodyInstance->GetSimulationIndex());
 
 								// Add the newly created particle to the soft-body collection
-								softBodyInstance->AddSoftBodyParticle(sbParticle);
+								softBodyInstance->AddSoftBodyParticle(*sbParticle);
 							}
 
 							// ------------------------------------------------------------------------------------------------
@@ -223,17 +226,17 @@ int main()
 								for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
 								{
 									// Get the particle list in the current soft-body
-									std::vector<SoftBodyParticle>& SoftBodyParticleList = softBody->GetParticleList();
+									std::vector<DeformableParticle*>& SoftBodyParticleList = softBody->GetParticleList();
 
 									for (unsigned int i = 0; i < SoftBodyParticleList.size(); i++)
 									{
-										SoftBodyParticle& currentParticle = SoftBodyParticleList[i];
-										float fDistance = glm::length(mouseClickPos - currentParticle.Position);
+										DeformableParticle* currentParticle = SoftBodyParticleList[i];
+										float fDistance = glm::length(mouseClickPos - currentParticle->Position);
 
 										if (fDistance < fMinimumDistance)
 										{
 											fMinimumDistance = fDistance;
-											softBodyControlledParticle = &currentParticle;
+											deformableControlledParticle = currentParticle;
 											softBodyInstance = softBody;
 										}
 									}
@@ -241,11 +244,11 @@ int main()
 
 								if (fMinimumDistance >= fMinimumPickingDistance)
 								{
-									softBodyControlledParticle = nullptr;
+									deformableControlledParticle = nullptr;
 								}
 								else
 								{
-									softBodyControlledParticle->SetControlledColor();
+									deformableControlledParticle->SetControlledColor();
 								}
 							}
 						}
@@ -295,9 +298,9 @@ int main()
 		if (SOFTBODY_SIMULATION)
 		{
 			// Update the position of the controlled particle
-			if (softBodyControlledParticle != nullptr)
+			if (deformableControlledParticle != nullptr)
 			{
-				softBodyControlledParticle->Position = glm::vec2(currentMousePosition.x, currentMousePosition.y);
+				deformableControlledParticle->Position = glm::vec2(currentMousePosition.x, currentMousePosition.y);
 			}
 		}
 		
@@ -319,8 +322,11 @@ int main()
 			{
 				if (FLUID_SIMULATION)
 				{
-					// Fluid application update 
-					FluidSimulation::GetInstance()->Update(window, FIXED_DELTA);
+					// Fluid application update 	
+					for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
+					{
+						fluidSim->Update(window, FIXED_DELTA);
+					}
 				}
 				
 				if (SOFTBODY_SIMULATION)
@@ -351,7 +357,10 @@ int main()
 		if (FLUID_SIMULATION)
 		{
 			// Fluid application draw
-			FluidSimulation::GetInstance()->Draw(window);
+			for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
+			{
+				fluidSim->Draw(window);
+			}
 		}
 		
 		if (SOFTBODY_SIMULATION)

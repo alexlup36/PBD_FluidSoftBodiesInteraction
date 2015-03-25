@@ -5,10 +5,11 @@
 #include <vector>
 
 #include "Common.h"
-#include "Particle.h"
+#include "FluidParticle.h"
 #include "SpatialPartition.h"
+#include "BaseSimulation.h"
 
-class FluidSimulation
+class FluidSimulation : public BaseSimulation
 {
 public:
 
@@ -21,28 +22,13 @@ public:
 		glm::vec2 projectionPoint;
 	};
 
-	static void InitializeSingleton()
+	FluidSimulation() 
 	{
-		if (theInstance == nullptr)
-		{
-			srand((unsigned int)time(NULL));
+		srand((unsigned int)time(NULL));
 
-			// Spatial partition
-			SpatialPartition::GetInstance().Setup();
-
-			theInstance = new FluidSimulation();
-		}
-	}
-
-	static FluidSimulation* GetInstance()
-	{
-		if (theInstance != nullptr)
-		{
-			return theInstance;
-		}
-
-		return nullptr;
-	}
+		// Spatial partition
+		SpatialPartition::GetInstance().Setup();
+	};
 
 	void Update(sf::RenderWindow& window, float dt);
 	void Draw(sf::RenderWindow& window);
@@ -50,22 +36,13 @@ public:
 	void BuildParticleSystem(int iParticleCount);
 
 	glm::vec2 GetRandomPosWithinLimits();
-	inline const std::vector<Particle>& GetFluidParticleList() { return m_ParticleList; }
+	inline const std::vector<FluidParticle>& GetFluidParticleList() { return m_ParticleList; }
 
 private:
-	// -------------------------------------------------------------------------------
-	static FluidSimulation* theInstance;
-
-	// Hide constructor for singleton implementation
-	FluidSimulation() {};
-
-	// Delete unneeded copy constructor and assignment operator
-	FluidSimulation(FluidSimulation const&) = delete;
-	void operator=(FluidSimulation const&) = delete;
 
 	// -------------------------------------------------------------------------------
 
-	std::vector<Particle> m_ParticleList;
+	std::vector<FluidParticle> m_ParticleList;
 
 	std::vector<ContainerConstraint> m_ContainerConstraints;
 
@@ -77,27 +54,27 @@ private:
 	void FindNeighborParticles();
 	void UpdateActualPosAndVelocities(float dt);
 	void GenerateCollisionConstraints(sf::RenderWindow& window);
-	void XSPH_Viscosity(Particle& particle);
+	void XSPH_Viscosity(FluidParticle& particle);
 
 	// ------------------------------------------------------------------------
 
-	void ComputeParticleConstraint(Particle& particle, std::vector<Particle*>& pNeighborList);
+	void ComputeParticleConstraint(FluidParticle& particle, std::vector<FluidParticle*>& pNeighborList);
 
 	// ------------------------------------------------------------------------
 
-	glm::vec2 ComputeParticleGradientConstraint(Particle& particle, Particle& neighbor, std::vector<Particle*>& pParticleNeighborList);
+	glm::vec2 ComputeParticleGradientConstraint(FluidParticle& particle, FluidParticle& neighbor, std::vector<FluidParticle*>& pParticleNeighborList);
 
 	// ------------------------------------------------------------------------
 
-	void ComputeLambda(Particle& particle, std::vector<Particle*>& pParticleNeighborList);
+	void ComputeLambda(FluidParticle& particle, std::vector<FluidParticle*>& pParticleNeighborList);
 
 	// ------------------------------------------------------------------------
 
-	void ComputePositionCorrection(Particle& particle, std::vector<Particle*>& pParticleNeighborList);
+	void ComputePositionCorrection(FluidParticle& particle, std::vector<FluidParticle*>& pParticleNeighborList);
 
 	// ------------------------------------------------------------------------
 
-	float ComputeArtificialPressureTerm(const Particle& p1, const Particle& p2);
+	float ComputeArtificialPressureTerm(const FluidParticle& p1, const FluidParticle& p2);
 
 	// ------------------------------------------------------------------------
 

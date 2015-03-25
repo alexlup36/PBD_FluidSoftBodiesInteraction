@@ -2,6 +2,8 @@
 
 void BezierCurve::CalculateMulticurveBezierPoints(std::vector<glm::vec2>& finalPoints)
 {
+	finalPoints.clear();
+
 	glm::vec2 p0, p1, midPoint, currentPoint, tempPoint;
 	float midx = 0.0f, midy = 0.0f;
 
@@ -69,15 +71,11 @@ void BezierCurve::QuadraticBezier(const glm::vec2& p0,
 	finalPoint.y = tdiff2 * p0.y + tdiff * 2.0f * t * p1.y + t2 * p2.y;
 }
 
-void BezierCurve::DrawLine(sf::RenderWindow& window,
-	const glm::vec2& p1,
-	const glm::vec2& p2)
+void BezierCurve::UpdateBezierPoints(const std::vector<DeformableParticle*>& deformableParticleList)
 {
-	sf::Vertex line[] =
+	for (unsigned int iIndex = 0; iIndex < deformableParticleList.size(); iIndex++)
 	{
-		sf::Vertex(sf::Vector2f(p1.x, p1.y)),
-		sf::Vertex(sf::Vector2f(p2.x, p2.y))
-	};
-
-	window.draw(line, 2, sf::Lines);
+		m_BezierParticleList[iIndex] = deformableParticleList[iIndex]->Position;
+	}
+	m_BezierParticleList[deformableParticleList.size()] = deformableParticleList[0]->Position;
 }

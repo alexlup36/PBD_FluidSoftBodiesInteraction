@@ -5,35 +5,34 @@
 #include <algorithm>
 #include "GrahamScan.h"
 #include "BezierCurve.h"
-#include "SoftBodyParticle.h"
+#include "DeformableParticle.h"
+#include "BaseSimulation.h"
 
-class SoftBody
+class SoftBody : public BaseSimulation
 {
 public:
 	SoftBody();
 
 	void Update(float dt);
 	void Draw(sf::RenderWindow& window);
+	void SetReady(bool ready);
 
-	inline unsigned int GetParticleCount() { return m_SoftBodyParticles.size(); }
-	inline void ClearSoftBodyParticleList() { m_SoftBodyParticles.clear(); }
-	inline void AddSoftBodyParticle(const SoftBodyParticle& sbParticle) 
+	inline unsigned int GetParticleCount() { return m_ParticlesList.size(); }
+	inline void ClearSoftBodyParticleList() { m_ParticlesList.clear(); }
+	inline void AddSoftBodyParticle(DeformableParticle& deformableParticle)
 	{
-		m_SoftBodyParticles.push_back(sbParticle); 
+		m_ParticlesList.push_back(&deformableParticle);
+
+		// The current instance to the global list of particles
+		ParticleManager::GetInstance().AddGlobalParticle(&deformableParticle);
 		
 		// Add the position of the particle to the list of point for bezier curve representation
-		BezierCurve::GetInstance().AddBezierPoint(sbParticle.Position);
+		m_BezierCurve.AddBezierPoint(deformableParticle.Position);
 	}
-	inline void SetReady(bool ready)
-	{
-		// Add the first particle add the end of the array to get a smooth bezier contour
-		BezierCurve::GetInstance().AddBezierPoint(m_SoftBodyParticles[0].Position);
 
-		m_bReady = ready; 
-	}
 	inline bool IsReady() { return m_bReady; }
 
-	inline std::vector<SoftBodyParticle>& GetParticleList() { return m_SoftBodyParticles; }
+	inline std::vector<DeformableParticle*>& GetParticleList() { return m_ParticlesList; }
 
 private:
 	bool m_bAllowFlipping;
@@ -43,19 +42,29 @@ private:
 	bool m_bReady;
 	bool m_bDrawGoalPositions;
 
-	bool m_bConvexHull;
+	bool m_bConvexHullInitialized;
 	bool m_bDrawConvexHull;
 	bool m_bBezierCurve;
+
+	int m_iIndex;
+	static int SoftBodyIndex;
 
 	float m_fStiffness;
 	float m_fBeta;
 
-	std::vector<SoftBodyParticle> m_SoftBodyParticles;
+	std::vector<glm::vec2> m_BezierPoints;
+	BezierCurve m_BezierCurve;
+
+	std::vector<DeformableParticle*> m_ParticlesList;
 
 	void ShapeMatching(float dt);
 	void Integrate(float dt);
 	void UpdateCollision(float dt);
 	void UpdateForces(float dt);
+
+	// Sort function
+	friend extern bool ScanlineSortY(glm::vec2& p1, glm::vec2& p2);
+	friend extern bool ScanlineSortX(glm::vec2& p1, glm::vec2& p2);
 };
 
 #endif // SOFTBODY_H

@@ -54,7 +54,7 @@ void Quadtree::Split()
 	m_ChildNodes.push_back(new Quadtree(m_iCurrentDepth + 1, bottomRightRect));
 }
 
-int Quadtree::GetIndex(const Particle& particle)
+int Quadtree::GetIndex(const BaseParticle& particle)
 {
 	int iIndex = -1;
 
@@ -62,9 +62,9 @@ int Quadtree::GetIndex(const Particle& particle)
 	float fHorizontalMidpoint = m_Bounds.top + m_Bounds.height / 2.0f;
 
 	// Object fits completely within the top half
-	bool bTopHalf = particle.GetPosition().y + particle.GetRadius() < fHorizontalMidpoint;
+	bool bTopHalf = particle.Position.y + particle.Radius < fHorizontalMidpoint;
 	// Object fits completely within the bottom half
-	bool bBottomHalf = particle.GetPosition().y - particle.GetRadius() > fHorizontalMidpoint;
+	bool bBottomHalf = particle.Position.y - particle.Radius > fHorizontalMidpoint;
 
 	// Object fits completely within the left quadrants
 	//if ()

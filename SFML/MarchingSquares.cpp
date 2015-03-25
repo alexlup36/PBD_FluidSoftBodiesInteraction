@@ -1,11 +1,10 @@
 #include "MarchingSquares.h"
 
-#include "FluidSimulation.h"
 #include "BezierCurve.h"
 
-float MarchingSquares::SamplePoint(unsigned int x, unsigned int y)
+float MarchingSquares::SamplePoint(FluidSimulation* sim, unsigned int x, unsigned int y)
 {
-	const std::vector<Particle>& fluidParticleList = FluidSimulation::GetInstance()->GetFluidParticleList();
+	const std::vector<FluidParticle>& fluidParticleList = sim->GetFluidParticleList();
 	// Reset the summation
 	float fSum = 0;
 
@@ -18,7 +17,7 @@ float MarchingSquares::SamplePoint(unsigned int x, unsigned int y)
 	return fSum;
 }
 
-void MarchingSquares::ProcessMarchingSquares(sf::RenderWindow& window)
+void MarchingSquares::ProcessMarchingSquares(FluidSimulation* fluidSim, sf::RenderWindow& window)
 {
 	// Go through all the boxes
 	for (unsigned int i = 0; i < MAPHEIGHT; i++)
@@ -52,11 +51,11 @@ void MarchingSquares::ProcessMarchingSquares(sf::RenderWindow& window)
 				}
 				else
 				{
-					m_Map[i][j].SampleTopLeft = SamplePoint(topLeft.x, topLeft.y);				// TopLeft
+					m_Map[i][j].SampleTopLeft = SamplePoint(fluidSim, topLeft.x, topLeft.y);				// TopLeft
 				}
 
 				// Calculate the sample for the bottom left corner
-				m_Map[i][j].SampleBottomLeft = SamplePoint(topLeft.x, topLeft.y + BOXSIZE);		// BottomLeft
+				m_Map[i][j].SampleBottomLeft = SamplePoint(fluidSim, topLeft.x, topLeft.y + BOXSIZE);		// BottomLeft
 
 				// Calculate the intersection point for the left edge
 				m_Map[i][j].LeftEdgeIntersection = glm::vec2((float)topLeft.x, (float)(topLeft.y + (bottomLeft.y - topLeft.y) * ((1.0f - m_Map[i][j].SampleTopLeft) / (m_Map[i][j].SampleBottomLeft - m_Map[i][j].SampleTopLeft))));
@@ -71,14 +70,14 @@ void MarchingSquares::ProcessMarchingSquares(sf::RenderWindow& window)
 			}
 			else
 			{
-				m_Map[i][j].SampleTopRight = SamplePoint(topLeft.x + BOXSIZE, topLeft.y);				// TopRight
+				m_Map[i][j].SampleTopRight = SamplePoint(fluidSim, topLeft.x + BOXSIZE, topLeft.y);				// TopRight
 
 				// No copy possible as we are in the top cell, calculate the top edge intersection
 				m_Map[i][j].TopEdgeIntersection = glm::vec2((float)(topLeft.x + (topRight.x - topLeft.x) * ((1.0f - m_Map[i][j].SampleTopLeft) / (m_Map[i][j].SampleTopRight - m_Map[i][j].SampleTopLeft))), (float)topLeft.y);
 			}
 
 			// Calculate the samples for the bottom right corner of the cell every iteration -> no copies possible
-			m_Map[i][j].SampleBottomRight = SamplePoint(topLeft.x + BOXSIZE, topLeft.y + BOXSIZE);	// BottomRight
+			m_Map[i][j].SampleBottomRight = SamplePoint(fluidSim, topLeft.x + BOXSIZE, topLeft.y + BOXSIZE);	// BottomRight
 
 			// Calculate the intersection points for the right and bottom edge -> no copies possible
 			m_Map[i][j].RightEdgeIntersection = glm::vec2((float)bottomRight.x, (float)(topRight.y + (bottomRight.y - topRight.y) * ((1.0f - m_Map[i][j].SampleTopRight) / (m_Map[i][j].SampleBottomRight - m_Map[i][j].SampleTopRight))));
@@ -101,34 +100,34 @@ void MarchingSquares::ProcessMarchingSquares(sf::RenderWindow& window)
 			case 0:
 				break;
 			case 1:
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].BottomEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].BottomEdgeIntersection);
 				break;
 
 			case 2:
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
 				break;
 
 			case 3:
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
 				break;
 
 			case 4:
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
 				break;
 
 			case 5:
 			{
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection);
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection);
+				DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
 				break;
 			}
 
 			case 6:
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].BottomEdgeIntersection);
+				DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].BottomEdgeIntersection);
 				break;
 
 			case 7:
-				BezierCurve::GetInstance().DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection);
 				break;
 			}
 		}

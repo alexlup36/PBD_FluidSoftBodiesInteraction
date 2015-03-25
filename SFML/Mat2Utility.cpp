@@ -40,6 +40,7 @@ void PolarDecomposition(const glm::mat2& A, glm::mat2& R, glm::mat2& S)
 	glm::mat2 ata = glm::transpose(A) * A;
 
 	glm::mat2 U;
+	R = glm::mat2(1.0f);
 	EigenDecomposition(ata, U);
 
 	float l0 = ata[0][0];

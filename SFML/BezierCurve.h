@@ -2,44 +2,25 @@
 #define BEZIERCURVE_H
 
 #include "Common.h"
-#include "SoftBodyParticle.h"
+#include "DeformableParticle.h"
 
 class BezierCurve
 {
+
 public:
-	static BezierCurve& GetInstance()
-	{
-		static BezierCurve instance;
-		return instance;
-	}
+
+	BezierCurve() {};
 
 	inline void AddBezierPoint(const glm::vec2& point) { m_BezierParticleList.push_back(point); }
-	inline void UpdateBezierPoints(const std::vector<SoftBodyParticle>& softBodyParticleList)
-	{
-		for (unsigned int iIndex = 0; iIndex < softBodyParticleList.size(); iIndex++)
-		{
-			m_BezierParticleList[iIndex] = softBodyParticleList[iIndex].Position;
-		}
-		m_BezierParticleList[softBodyParticleList.size()] = softBodyParticleList[0].Position;
-	}
 
 	// Bezier calculations
 	void CalculateMulticurveBezierPoints(std::vector<glm::vec2>& finalPoints);
 	// Draw the bezier curve by drawing lines between the given array of points 
 	void DrawBezierCurve(sf::RenderWindow& window, const std::vector<glm::vec2>& bezierPoints);
-
-	void DrawLine(sf::RenderWindow& window,
-		const glm::vec2& p1,
-		const glm::vec2& p2);
+	// Update the points in the curve
+	void UpdateBezierPoints(const std::vector<DeformableParticle*>& deformableParticleList);
 
 private:
-	// Hide constructor for singleton implementation
-	BezierCurve() {};
-
-	// Delete unneeded copy constructor and assignment operator
-	BezierCurve(BezierCurve const&) = delete;
-	void operator=(BezierCurve const&) = delete;
-
 	// Methods
 
 	// Calculate the final control point using the initial control point so that the curve goes through the input control point
@@ -55,6 +36,7 @@ private:
 		glm::vec2& finalPoint);
 
 	const float BEZIERSTEP = 0.01f;
+
 	std::vector<glm::vec2> m_BezierParticleList;
 };
 

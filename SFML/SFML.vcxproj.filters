@@ -18,9 +18,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Particle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SpatialPartition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -33,9 +30,6 @@
     <ClCompile Include="GrahamScan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SoftBodyParticle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BezierCurve.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -45,11 +39,29 @@
     <ClCompile Include="FluidSimulation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="BaseParticle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FluidParticle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DeformableParticle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Quadtree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseSimulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Particle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -65,9 +77,6 @@
     <ClInclude Include="GrahamScan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SoftBodyParticle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="BezierCurve.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -75,6 +84,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FluidSimulation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseParticle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FluidParticle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DeformableParticle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Quadtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseSimulation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

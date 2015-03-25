@@ -4,7 +4,6 @@
 #include <memory>
 #include "MarchingSquares.h"
 
-FluidSimulation* FluidSimulation::theInstance = nullptr;
 
 void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 {
@@ -17,7 +16,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 	FindNeighborParticles(); // might need to be done in the iterations loop
 
 	// Get the neighbors for all particles in the current update step
-	std::vector<Particle*> neighbors[PARTICLE_COUNT];
+	std::vector<FluidParticle*> neighbors[PARTICLE_COUNT];
 	for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
 	{
 		SpatialPartition::GetInstance().GetNeighbors(m_ParticleList[iParticleIndex], neighbors[iParticleIndex]);
@@ -58,11 +57,32 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			// For all particles update the predicted position
 			for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 			{
-				it->AddDeltaPredPosition(it->GetPositionCorrection());
+				it->PredictedPosition += it->PositionCorrection;
 			}
 
 			// ------------------------------------------------------------------------
 		}
+
+		// Particle-particle collision detection and response
+		//for (int index = 0; index < PARTICLE_COUNT; index++)
+		//{
+		//	for each (FluidParticle* particle in neighbors[index])
+		//	{
+		//		// Check if there is a collision between particles
+		//		if (m_ParticleList[index].IsColliding(*particle))
+		//		{
+		//			glm::vec2 p1p2 = m_ParticleList[index].PredictedPosition -
+		//				particle->PredictedPosition;
+		//			float fDistance = glm::length(p1p2);
+
+		//			glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+		//			glm::vec2 fDp2 = -fDp1;
+
+		//			m_ParticleList[index].PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
+		//			particle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
+		//		}
+		//	}
+		//}
 		
 		if (PBD_COLLISION)
 		{
@@ -73,7 +93,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			for each (auto container_constraint in m_ContainerConstraints)
 			{
 				glm::vec2 particlePredictedPosition =
-					m_ParticleList[container_constraint.particleIndex].GetPredictedPosition();
+					m_ParticleList[container_constraint.particleIndex].PredictedPosition;
 
 				float constraint = glm::dot(particlePredictedPosition - container_constraint.projectionPoint, container_constraint.normalVector);
 
@@ -81,7 +101,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 				float gradienDescentLength = glm::length(gradientDescent);
 				glm::vec2 dp = -constraint / (gradienDescentLength * gradienDescentLength) * gradientDescent;
 
-				m_ParticleList[container_constraint.particleIndex].AddDeltaPredPosition(dp * container_constraint.stiffness_adjusted);
+				m_ParticleList[container_constraint.particleIndex].PredictedPosition += dp * container_constraint.stiffness_adjusted;
 			}
 		}
 		
@@ -97,23 +117,23 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 		for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 		{
 			// Wall collision response
-			glm::vec2 currentVelocity = it->GetVelocity();
+			glm::vec2 currentVelocity = it->Velocity;
 			
-			if (it->GetPredictedPosition().x < PARTICLE_LEFTLIMIT || it->GetPredictedPosition().x > PARTICLE_RIGHTLIMIT)
+			if (it->PredictedPosition.x < PARTICLE_LEFTLIMIT || it->PredictedPosition.x > PARTICLE_RIGHTLIMIT)
 			{
-				it->SetVelocity(glm::vec2(-currentVelocity.x, currentVelocity.y));
+				it->Velocity = glm::vec2(-currentVelocity.x, currentVelocity.y);
 			}
 
-			if (it->GetPredictedPosition().y < PARTICLE_TOPLIMIT || it->GetPredictedPosition().y > PARTICLE_BOTTOMLIMIT)
+			if (it->PredictedPosition.y < PARTICLE_TOPLIMIT || it->PredictedPosition.y > PARTICLE_BOTTOMLIMIT)
 			{
-				it->SetVelocity(glm::vec2(currentVelocity.x, -currentVelocity.y));
+				it->Velocity = glm::vec2(currentVelocity.x, -currentVelocity.y);
 			}
 
 			// Clamp position inside the container
-			glm::vec2 currentPosition = it->GetPosition();
-			currentPosition.x = glm::clamp(currentPosition.x, PARTICLE_LEFTLIMIT, PARTICLE_RIGHTLIMIT);
-			currentPosition.y = glm::clamp(currentPosition.y, PARTICLE_TOPLIMIT, PARTICLE_BOTTOMLIMIT);
-			it->SetPosition(currentPosition);
+			glm::vec2 currentPosition = it->Position;
+			currentPosition.x = glm::clamp(currentPosition.x, PARTICLE_LEFTLIMIT + 1.0f, PARTICLE_RIGHTLIMIT - 1.0f);
+			currentPosition.y = glm::clamp(currentPosition.y, PARTICLE_TOPLIMIT + 1.0f, PARTICLE_BOTTOMLIMIT - 1.0f);
+			it->Position = currentPosition;
 		}
 	}
 	
@@ -134,7 +154,7 @@ void FluidSimulation::Draw(sf::RenderWindow& window)
 	
 	if (FLUIDRENDERING_MARCHINGSQUARES)
 	{
-		MarchingSquares::GetInstance().ProcessMarchingSquares(window);
+		MarchingSquares::GetInstance().ProcessMarchingSquares(this, window);
 	}
 }
 
@@ -160,13 +180,16 @@ void FluidSimulation::BuildParticleSystem(int iParticleCount)
 	{
 		for (int jColumn = 0; jColumn < PARTICLE_HEIGHT_COUNT; jColumn++)
 		{
-			std::shared_ptr<Particle> particle = std::make_shared<Particle>(currentPosition, PARTICLE_RADIUS);
+			FluidParticle* particle = new FluidParticle(currentPosition, GetSimulationIndex());
 
 			// Update current position X
 			currentPosition.x += fDx;
 
 			// Build particle list
 			m_ParticleList.push_back(*particle);
+
+			// Add particle to the global list
+			ParticleManager::GetInstance().AddGlobalParticle(particle);
 		}
 
 		// Update current position Y
@@ -179,15 +202,11 @@ void FluidSimulation::UpdateExternalForces(float dt)
 {
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
+		// Update particle velocity
 		if (GRAVITY_ON)
 		{
-			// Update particle force
-			it->SetForce(GRAVITATIONAL_ACCELERATION * it->GetParticleMass());
+			it->Velocity += dt * it->Mass * (GRAVITATIONAL_ACCELERATION * it->Mass);
 		}
-
-		// Update particle velocity
-		glm::vec2 deltaVelocity = dt * it->GetParticleMass() * it->GetForce();
-		it->AddDeltaVelocity(dt * it->GetParticleMass() * it->GetForce());
 	}
 }
 
@@ -196,7 +215,7 @@ void FluidSimulation::DampVelocities()
 	// Damp velocity
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
-		it->SetVelocity(it->GetVelocity() * VELOCITY_DAMPING);
+		it->Velocity = it->Velocity * VELOCITY_DAMPING;
 	}
 }
 
@@ -206,7 +225,7 @@ void FluidSimulation::CalculatePredictedPositions(sf::RenderWindow& window, floa
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
 		// Update position
-		it->AddDeltaPredPosition(dt * it->GetVelocity());
+		it->PredictedPosition += dt * it->Velocity;
 	}
 }
 
@@ -217,7 +236,7 @@ void FluidSimulation::UpdateActualPosAndVelocities(float dt)
 		if (dt != 0.0f)
 		{
 			// Update velocity based on the distance offset (after correcting the position)
-			it->SetVelocity((it->GetPredictedPosition() - it->GetPosition()) / dt);
+			it->Velocity = (it->PredictedPosition - it->Position) / dt;
 		}
 
 		// Apply XSPH viscosity
@@ -227,14 +246,14 @@ void FluidSimulation::UpdateActualPosAndVelocities(float dt)
 		}
 
 		// Update position
-		it->SetPosition(it->GetPredictedPosition());
+		it->Position = it->PredictedPosition;
 
 		// Update local position
 		glm::vec2 localOffset(WALL_LEFTLIMIT, WALL_TOPLIMIT);
-		it->SetLocalPosition(it->GetPosition() - localOffset);
+		it->LocalPosition = it->Position - localOffset;
 
 		// Update the position of the particle shape
-		it->UpdateShapePosition();
+		it->Update();
 	}
 }
 
@@ -242,65 +261,65 @@ void FluidSimulation::GenerateCollisionConstraints(sf::RenderWindow& window)
 {
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
-		if (it->GetPredictedPosition().x < PARTICLE_LEFTLIMIT)
+		if (it->PredictedPosition.x < PARTICLE_LEFTLIMIT)
 		{
-			float fIntersectionCoeff = (PARTICLE_LEFTLIMIT - it->GetPosition().x) / (it->GetPredictedPosition().x - it->GetPosition().x);
+			float fIntersectionCoeff = (PARTICLE_LEFTLIMIT - it->Position.x) / (it->PredictedPosition.x - it->Position.x);
 			glm::vec2 intersectionPoint = glm::vec2(PARTICLE_LEFTLIMIT,
-				it->GetPosition().y + fIntersectionCoeff * (it->GetPredictedPosition().y - it->GetPosition().y));
+				it->Position.y + fIntersectionCoeff * (it->PredictedPosition.y - it->Position.y));
 
 			ContainerConstraint cc;
-			cc.particleIndex = it->GetParticleIndex();
+			cc.particleIndex = it->Index;
 			cc.normalVector = glm::vec2(1.0f, 0.0f);
 			cc.projectionPoint = intersectionPoint;
-			cc.stiffness = 0.1f;
-			cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
+			cc.stiffness = PBDSTIFFNESS;
+			cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
 			m_ContainerConstraints.push_back(cc);
 		}
 
-		if (it->GetPredictedPosition().y < PARTICLE_TOPLIMIT)
+		if (it->PredictedPosition.y < PARTICLE_TOPLIMIT)
 		{
-			float fIntersectionCoeff = (PARTICLE_TOPLIMIT - it->GetPosition().y) / (it->GetPredictedPosition().y - it->GetPosition().y);
-			glm::vec2 intersectionPoint = glm::vec2(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
+			float fIntersectionCoeff = (PARTICLE_TOPLIMIT - it->Position.y) / (it->PredictedPosition.y - it->Position.y);
+			glm::vec2 intersectionPoint = glm::vec2(it->Position.x + fIntersectionCoeff * (it->PredictedPosition.x - it->Position.x),
 				PARTICLE_TOPLIMIT);
 
 			ContainerConstraint cc;
-			cc.particleIndex = it->GetParticleIndex();
+			cc.particleIndex = it->Index;
 			cc.normalVector = glm::vec2(0.0f, 1.0f);
 			cc.projectionPoint = intersectionPoint;
-			cc.stiffness = 0.1f;
-			cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
+			cc.stiffness = PBDSTIFFNESS;
+			cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
 			m_ContainerConstraints.push_back(cc);
 		}
 
-		if (it->GetPredictedPosition().x > PARTICLE_RIGHTLIMIT)
+		if (it->PredictedPosition.x > PARTICLE_RIGHTLIMIT)
 		{
-			float fIntersectionCoeff = (PARTICLE_RIGHTLIMIT - it->GetPosition().x) / (it->GetPredictedPosition().x - it->GetPosition().x);
+			float fIntersectionCoeff = (PARTICLE_RIGHTLIMIT - it->Position.x) / (it->PredictedPosition.x - it->Position.x);
 			glm::vec2 intersectionPoint = glm::vec2(PARTICLE_RIGHTLIMIT,
-				it->GetPosition().y + fIntersectionCoeff * (it->GetPredictedPosition().y - it->GetPosition().y));
+				it->Position.y + fIntersectionCoeff * (it->PredictedPosition.y - it->Position.y));
 
 			ContainerConstraint cc;
-			cc.particleIndex = it->GetParticleIndex();
+			cc.particleIndex = it->Index;
 			cc.normalVector = glm::vec2(-1.0f, 0.0f);
 			cc.projectionPoint = intersectionPoint;
-			cc.stiffness = 0.1f;
-			cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
+			cc.stiffness = PBDSTIFFNESS;
+			cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
 			m_ContainerConstraints.push_back(cc);
 		}
 
-		if (it->GetPredictedPosition().y > PARTICLE_BOTTOMLIMIT)
+		if (it->PredictedPosition.y > PARTICLE_BOTTOMLIMIT)
 		{
-			if (it->GetPredictedPosition().y - it->GetPosition().y != 0.0f)
+			if (it->PredictedPosition.y - it->Position.y != 0.0f)
 			{
-				float fIntersectionCoeff = (PARTICLE_BOTTOMLIMIT - it->GetPosition().y) / (it->GetPredictedPosition().y - it->GetPosition().y);
-				glm::vec2 intersectionPoint = glm::vec2(it->GetPosition().x + fIntersectionCoeff * (it->GetPredictedPosition().x - it->GetPosition().x),
+				float fIntersectionCoeff = (PARTICLE_BOTTOMLIMIT - it->Position.y) / (it->PredictedPosition.y - it->Position.y);
+				glm::vec2 intersectionPoint = glm::vec2(it->Position.x + fIntersectionCoeff * (it->PredictedPosition.x - it->Position.x),
 					PARTICLE_BOTTOMLIMIT);
 
 				ContainerConstraint cc;
-				cc.particleIndex = it->GetParticleIndex();
+				cc.particleIndex = it->Index;
 				cc.normalVector = glm::vec2(0.0f, -1.0f);
 				cc.projectionPoint = intersectionPoint;
-				cc.stiffness = 0.1f;
-				cc.stiffness_adjusted = 1.0f - pow(1.0f - cc.stiffness, 1.0f / SOLVER_ITERATIONS);
+				cc.stiffness = PBDSTIFFNESS;
+				cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
 				m_ContainerConstraints.push_back(cc);
 			}
 		}
@@ -316,30 +335,30 @@ void FluidSimulation::FindNeighborParticles()
 	}
 }
 
-void FluidSimulation::XSPH_Viscosity(Particle& particle)
+void FluidSimulation::XSPH_Viscosity(FluidParticle& particle)
 {
 	// XSPH viscosity
 
 	// Get the neighbors of the current particle
-	std::vector<Particle*> neighborList;
+	std::vector<FluidParticle*> neighborList;
 	SpatialPartition::GetInstance().GetNeighbors(particle, neighborList);
 
 	// Velocity accumulator
 	glm::vec2 accumulatorVelocity = glm::vec2(0.0f);
 
-	for each (Particle* pNeighborParticle in neighborList)
+	for each (FluidParticle* pNeighborParticle in neighborList)
 	{
 		// Use poly6 smoothing kernel
-		accumulatorVelocity += (Poly6Kernel(particle.GetPredictedPosition(), pNeighborParticle->GetPredictedPosition()) * (particle.GetVelocity() - pNeighborParticle->GetVelocity()));
+		accumulatorVelocity += (Poly6Kernel(particle.PredictedPosition, pNeighborParticle->PredictedPosition) * (particle.Velocity - pNeighborParticle->Velocity));
 	}
 
 	// Add the accumulated velocity to implement XSPH
-	particle.AddDeltaVelocity(XSPHParam * accumulatorVelocity);
+	particle.Velocity += XSPHParam * accumulatorVelocity;
 }
 
 // ------------------------------------------------------------------------
 
-void FluidSimulation::ComputeParticleConstraint(Particle& particle, std::vector<Particle*>& pNeighborList)
+void FluidSimulation::ComputeParticleConstraint(FluidParticle& particle, std::vector<FluidParticle*>& pNeighborList)
 {
 	// Calculate the particle density using the standard SPH density estimator
 	float fAcc = 0.0f;
@@ -349,26 +368,26 @@ void FluidSimulation::ComputeParticleConstraint(Particle& particle, std::vector<
 	{
 		// For the current neighbor calculate the Poly6 kernel value using the vector between the 
 		// current particle and the current neighbor
-		fAcc += Poly6Kernel(particle.GetPredictedPosition(), pNeighborList[i]->GetPredictedPosition());
+		fAcc += Poly6Kernel(particle.PredictedPosition, pNeighborList[i]->PredictedPosition);
 	}
 
 	// Update the particle SPH density
-	particle.SetSPHDensity(fAcc);
+	particle.SPHDensity = fAcc;
 
 	// Calculate and update the particle density constraint value
-	particle.SetDensityConstraint(particle.GetSPHDensity() * INVERSE_WATER_RESTDENSITY - 1.0f);
+	particle.DensityConstraint = particle.SPHDensity * INVERSE_WATER_RESTDENSITY - 1.0f;
 }
 
 // ------------------------------------------------------------------------
 
-glm::vec2 FluidSimulation::ComputeParticleGradientConstraint(Particle& particle, Particle& neighbor, std::vector<Particle*>& pParticleNeighborList)
+glm::vec2 FluidSimulation::ComputeParticleGradientConstraint(FluidParticle& particle, FluidParticle& neighbor, std::vector<FluidParticle*>& pParticleNeighborList)
 {
 	// Calculate the gradient of the constraint function - Monaghan 1992
 	// SPH recipe for the gradient of the constraint function with respect
 	// to a particle k
 
 	// If the particle k is a neighboring particle
-	if (particle.GetParticleIndex() == neighbor.GetParticleIndex()) // k = i
+	if (particle.Index == neighbor.Index) // k = i
 	{
 		// Accumulator for the gradient
 		glm::vec2 acc = glm::vec2(0.0f);
@@ -376,10 +395,10 @@ glm::vec2 FluidSimulation::ComputeParticleGradientConstraint(Particle& particle,
 		for (unsigned int i = 0; i < pParticleNeighborList.size(); i++)
 		{
 			// Get the current neighbor particle
-			Particle* p = pParticleNeighborList[i];
+			FluidParticle* p = pParticleNeighborList[i];
 
 			// Calculate the sum of all gradients between the particle and its neighbors
-			acc += SpikyKernelGradient(particle.GetPredictedPosition(), p->GetPredictedPosition());
+			acc += SpikyKernelGradient(particle.PredictedPosition, p->PredictedPosition);
 		}
 
 		acc *= INVERSE_WATER_RESTDENSITY;
@@ -389,7 +408,7 @@ glm::vec2 FluidSimulation::ComputeParticleGradientConstraint(Particle& particle,
 	else // k = j Particle k is not a neighboring particle
 	{
 		// Calculate the gradient 
-		glm::vec2 gradient = SpikyKernelGradient(particle.GetPredictedPosition(), neighbor.GetPredictedPosition());
+		glm::vec2 gradient = SpikyKernelGradient(particle.PredictedPosition, neighbor.PredictedPosition);
 		gradient *= (-1.0f * INVERSE_WATER_RESTDENSITY);
 
 		return gradient;
@@ -398,7 +417,7 @@ glm::vec2 FluidSimulation::ComputeParticleGradientConstraint(Particle& particle,
 
 // ------------------------------------------------------------------------
 
-void FluidSimulation::ComputeLambda(Particle& particle, std::vector<Particle*>& pParticleNeighborList)
+void FluidSimulation::ComputeLambda(FluidParticle& particle, std::vector<FluidParticle*>& pParticleNeighborList)
 {
 	float acc = 0.0f;
 
@@ -416,12 +435,12 @@ void FluidSimulation::ComputeLambda(Particle& particle, std::vector<Particle*>& 
 	}
 
 	// Calculate the lambda value for the current particle
-	particle.SetLambda((-1.0f) * particle.GetDensityConstraint() / (acc + RELAXATION_PARAMETER));
+	particle.Lambda = (-1.0f) * particle.DensityConstraint / (acc + RELAXATION_PARAMETER);
 }
 
 // ------------------------------------------------------------------------
 
-void FluidSimulation::ComputePositionCorrection(Particle& particle, std::vector<Particle*>& pParticleNeighborList)
+void FluidSimulation::ComputePositionCorrection(FluidParticle& particle, std::vector<FluidParticle*>& pParticleNeighborList)
 {
 	glm::vec2 acc = glm::vec2(0.0f);
 
@@ -429,34 +448,34 @@ void FluidSimulation::ComputePositionCorrection(Particle& particle, std::vector<
 	for (unsigned int i = 0; i < pParticleNeighborList.size(); i++)
 	{
 		// Get the current particle
-		Particle* pCurrentNeighborParticle = pParticleNeighborList[i];
+		FluidParticle* pCurrentNeighborParticle = pParticleNeighborList[i];
 
-		glm::vec2 gradient = SpikyKernelGradient(particle.GetPredictedPosition(), pCurrentNeighborParticle->GetPredictedPosition());
+		glm::vec2 gradient = SpikyKernelGradient(particle.PredictedPosition, pCurrentNeighborParticle->PredictedPosition);
 
 		// Add an artificial pressure term which improves the particle distribution, creates surface tension, and
 		// lowers the neighborhood requirements of traditional SPH
 		if (ARTIFICIAL_PRESSURE_TERM)
 		{
-			acc += gradient * (particle.GetLambda() + pCurrentNeighborParticle->GetLambda() + ComputeArtificialPressureTerm(particle, *pCurrentNeighborParticle));
+			acc += gradient * (particle.Lambda + pCurrentNeighborParticle->Lambda + ComputeArtificialPressureTerm(particle, *pCurrentNeighborParticle));
 		}
 		else
 		{
-			acc += gradient * (particle.GetLambda() + pCurrentNeighborParticle->GetLambda());
+			acc += gradient * (particle.Lambda + pCurrentNeighborParticle->Lambda);
 		}
 	}
 
 	// Scale the acc by the inverse of the rest density
-	particle.SetPositionCorrection(acc * INVERSE_WATER_RESTDENSITY /* * particle.mass */);
+	particle.PositionCorrection = acc * INVERSE_WATER_RESTDENSITY /* * particle.mass */;
 }
 
 // ------------------------------------------------------------------------
 
-float FluidSimulation::ComputeArtificialPressureTerm(const Particle& p1, const Particle& p2)
+float FluidSimulation::ComputeArtificialPressureTerm(const FluidParticle& p1, const FluidParticle& p2)
 {
 	// Calculate an artificial pressure term which solves the problem of a particle having to few
 	// neighbors which results in negative pressure. The ARTIFICIAL_PRESSURE constant is the value
 	// of the kernel function at some fixed point inside the smoothing radius 
-	float fKernelValue = Poly6Kernel(p1.GetPredictedPosition(), p2.GetPredictedPosition());
+	float fKernelValue = Poly6Kernel(p1.PredictedPosition, p2.PredictedPosition);
 
 	return (-0.1f) * pow(fKernelValue * INVERSE_ARTIFICIAL_PRESSURE, 4.0f);
 }

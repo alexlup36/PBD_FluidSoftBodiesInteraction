@@ -1,4 +1,4 @@
-#include "SoftBodyParticle.h"
+#include "DeformableParticle.h"
 #include <stack>
 
 class GrahamScan
@@ -6,11 +6,11 @@ class GrahamScan
 
 public:
 
-	static void InitializeSingleton(std::vector<SoftBodyParticle>& softBodyParticleList)
+	static void InitializeSingleton(std::vector<DeformableParticle*>& deformableParticleList)
 	{
 		if (theInstance == nullptr)
 		{
-			theInstance = new GrahamScan(softBodyParticleList);
+			theInstance = new GrahamScan(deformableParticleList);
 		}
 	}
 
@@ -27,12 +27,12 @@ public:
 	void Draw(sf::RenderWindow& window);
 
 	// Graham scan
-	friend extern bool SmallestY(SoftBodyParticle& p1, SoftBodyParticle& p2);
-	friend extern bool PolarOrder(SoftBodyParticle& p1, SoftBodyParticle& p2);
+	friend extern bool SmallestY(DeformableParticle* p1, DeformableParticle* p2);
+	friend extern bool PolarOrder(DeformableParticle* p1, DeformableParticle* p2);
 
-	static int CCWTurn(const SoftBodyParticle& p1,
-		const SoftBodyParticle& p2,
-		const SoftBodyParticle& p3)
+	static int CCWTurn(const DeformableParticle& p1,
+		const DeformableParticle& p2,
+		const DeformableParticle& p3)
 	{
 		int iArea = (int)((p2.Position.x - p1.Position.x) * (p3.Position.y - p1.Position.y) -
 			(p2.Position.y - p1.Position.y) * (p3.Position.x - p1.Position.x));
@@ -55,12 +55,12 @@ private:
 
 	// Hide constructor for singleton implementation
 	GrahamScan() {};
-	GrahamScan(std::vector<SoftBodyParticle>& softBodyParticleList);
+	GrahamScan(std::vector<DeformableParticle*>& deformableParticleList);
 	
 	// Delete unneeded copy constructor and assignment operator
 	GrahamScan(GrahamScan const&) = delete;
 	void operator=(GrahamScan const&) = delete;
 
-	static SoftBodyParticle m_Pivot;
-	std::stack<SoftBodyParticle*> m_ConvexHull;
+	static DeformableParticle* m_Pivot;
+	std::stack<DeformableParticle*> m_ConvexHull;
 };

@@ -2,7 +2,8 @@
 #define MARCHINGSQUARES_H
 
 #include "Common.h"
-#include "Particle.h"
+#include "FluidParticle.h"
+#include "FluidSimulation.h"
 
 struct Cell
 {
@@ -32,7 +33,7 @@ public:
 	}
 
 	// Update and draw marching squares
-	void ProcessMarchingSquares(sf::RenderWindow& window);
+	void ProcessMarchingSquares(FluidSimulation* fluidSim, sf::RenderWindow& window);
 
 private:
 	// --------------------------------------------------------------------------------
@@ -54,7 +55,7 @@ private:
 	// --------------------------------------------------------------------------------
 
 	// Calculate the intensity
-	float SamplePoint(unsigned int x, unsigned int y);
+	float SamplePoint(FluidSimulation* sim, unsigned int x, unsigned int y);
 
 	// Methods
 	inline float InvSqrt(float x)
@@ -66,13 +67,13 @@ private:
 		x = x * (1.5f - xhalf * x * x);     // One round of Newton's method 
 		return x;
 	}
-	inline float CalculateEquation(const Particle& particle, unsigned int x, unsigned int y)
+	inline float CalculateEquation(const FluidParticle& particle, unsigned int x, unsigned int y)
 	{
-		float fParticleX = particle.GetPosition().x;
-		float fParticleY = particle.GetPosition().y;
+		float fParticleX = particle.Position.x;
+		float fParticleY = particle.Position.y;
 
 		float invSqrt = InvSqrt((x - fParticleX) * (x - fParticleX) + (y - fParticleY) * (y - fParticleY));
-		return 0.5f * particle.GetRadius() * invSqrt;
+		return 0.5f * particle.Radius * invSqrt;
 	}
 
 	// Members
