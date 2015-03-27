@@ -208,12 +208,36 @@ int main()
 								currentMousePosition.x = (int)glm::clamp((float)currentMousePosition.x, WALL_LEFTLIMIT, WALL_RIGHTLIMIT);
 								currentMousePosition.y = (int)glm::clamp((float)currentMousePosition.y, WALL_TOPLIMIT, WALL_BOTTOMLIMIT);
 
-								// Create a soft body particle
-								DeformableParticle* sbParticle = new DeformableParticle(glm::vec2(currentMousePosition.x,
-									currentMousePosition.y), softBodyInstance->GetSimulationIndex());
+								int width = 6;
+								int height = 6;
 
-								// Add the newly created particle to the soft-body collection
-								softBodyInstance->AddSoftBodyParticle(*sbParticle);
+								float dt = 0.1f;
+								float startPosX = currentMousePosition.x - width * PARTICLE_RADIUS;
+								float startPosY = currentMousePosition.y - height * PARTICLE_RADIUS;
+								glm::vec2 currentPosition = glm::vec2(startPosX, startPosY);
+
+								for (int i = 0; i < height; i++)
+								{
+									currentPosition.x = startPosX;
+
+									for (int j = 0; j < width; j++)
+									{
+										// Create a soft body particle
+										DeformableParticle* sbParticle = new DeformableParticle(glm::vec2(currentPosition.x,
+											currentPosition.y), softBodyInstance->GetSimulationIndex());
+
+										// Set parent reference
+										sbParticle->SetParentRef(softBodyInstance.get());
+
+										// Add the newly created particle to the soft-body collection
+										softBodyInstance->AddSoftBodyParticle(*sbParticle);
+
+										// Update position
+										currentPosition.x += (PARTICLE_RADIUS * 2.0f) + dt;
+									}
+
+									currentPosition.y += (PARTICLE_RADIUS * 2.0f) + dt;
+								}
 							}
 
 							// ------------------------------------------------------------------------------------------------

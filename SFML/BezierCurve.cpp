@@ -44,7 +44,7 @@ void BezierCurve::DrawBezierCurve(sf::RenderWindow& window, const std::vector<gl
 {
 	for (unsigned int i = 0; i < bezierPoints.size() - 1; i++)
 	{
-		DrawLine(window, bezierPoints[i], bezierPoints[i + 1]);
+		DrawLine(window, bezierPoints[i], bezierPoints[i + 1], sf::Color::Red);
 	}
 }
 

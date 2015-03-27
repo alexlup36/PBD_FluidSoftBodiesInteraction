@@ -3,6 +3,8 @@
 
 #include "SpatialPartition.h"
 
+#include <limits>
+
 
 int SoftBody::SoftBodyIndex = 0;
 
@@ -14,7 +16,7 @@ SoftBody::SoftBody()
 	m_bQuadraticMatch			= false;
 
 	m_bConvexHullInitialized	= false;
-	m_bDrawConvexHull			= false;
+	m_bDrawConvexHull			= true;
 	m_bBezierCurve				= false;
 
 	m_bReady					= false;
@@ -23,6 +25,9 @@ SoftBody::SoftBody()
 	m_fBeta = 0.0f;
 
 	m_iIndex = SoftBodyIndex++;
+
+	// Set simulation type
+	SimType = SimulationType::SoftBodySimulation;
 }
 
 void SoftBody::Update(float dt)
@@ -33,7 +38,9 @@ void SoftBody::Update(float dt)
 		if (!m_bConvexHullInitialized && m_bDrawConvexHull)
 		{
 			m_bConvexHullInitialized = true;
-			GrahamScan::InitializeSingleton(m_ParticlesList);
+			m_ConvexHull.Initialize(m_InitialParticlesList);
+
+			m_iParticleListSize = m_ParticlesList.size();
 		}
 
 		if (m_bBezierCurve)
@@ -52,39 +59,68 @@ void SoftBody::Update(float dt)
 		int iIteration = 0;
 		while (iIteration++ < SOLVER_ITERATIONS)
 		{
-			// Get global particle list size
-			unsigned int globalListSize = ParticleManager::GetInstance().GlobalParticleListSize();
-			// Particle-particle collision detection and response
-			for (unsigned int i = 0; i < globalListSize; i++)
+			unsigned int deformableListSize = ParticleManager::GetInstance().GetDeformableParticles().size();
+			
+			// Update all particles in the soft body
+			for (unsigned int iIndex = 0; iIndex < m_iParticleListSize; iIndex++)
 			{
-				for (unsigned int j = 0; j < globalListSize; j++)
-				{
-					BaseParticle* p1 = ParticleManager::GetInstance().GetParticle(i);
-					BaseParticle* p2 = ParticleManager::GetInstance().GetParticle(j);
+				// Get the current particle in the soft body instance
+				DeformableParticle* pSoftParticle1 = m_ParticlesList[iIndex];
 
-					if (p1->ParticleType == ParticleType::FluidParticle &&
-						p2->ParticleType == ParticleType::FluidParticle)
-					{
-						continue;
-					}
+				// Calculate the minimum translation distance
+				// pSoftParticle1->CalculateMinimumTranslationDistance(m_ConvexHull.GetEdgeList());
+
+				float fMinDistance = std::numeric_limits<float>::max();
+				float fGradient = 0.0f;
+
+				// Check the current deformable particle against all other deformable particles
+				for (unsigned int iDeformableParticleIndex = 0; iDeformableParticleIndex < deformableListSize; iDeformableParticleIndex++)
+				{
+					// Get the instance of the other particle
+					DeformableParticle* pOtherParticle = ParticleManager::GetInstance().GetDeformableParticle(iDeformableParticleIndex);
 
 					// Make sure it's not the same particle
-					if (p1->GlobalIndex != p2->GlobalIndex)
+					if (pSoftParticle1->GlobalIndex != pOtherParticle->GlobalIndex)
 					{
 						// Make sure it's not within the same simulation
-						if (p1->GetParentIndex() != p2->GetParentIndex())
+						if (pSoftParticle1->GetParentIndex() != pOtherParticle->GetParentIndex())
 						{
 							// Check if there is a collision between particles
-							if (p1->IsColliding(*p2))
+							if (pSoftParticle1->IsColliding(*pOtherParticle))
 							{
-								glm::vec2 p1p2 = p1->Position - p2->Position;
-								float fDistance = glm::length(p1p2);
+								pSoftParticle1->CalculateMinimumTranslationDistance();
+								pOtherParticle->CalculateMinimumTranslationDistance();
 
-								glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-								glm::vec2 fDp2 = -fDp1;
+								if (pSoftParticle1->SignedDistance < 0.0f ||
+									pOtherParticle->SignedDistance < 0.0f)
+								{
+									// Particle-particle collision
+									glm::vec2 p1p2 = pSoftParticle1->Position - pOtherParticle->Position;
+									float fDistance = glm::length(p1p2);
 
-								p1->Position += fDp1 * PBDSTIFFNESS_ADJUSTED;
-								p2->Position += fDp2 * PBDSTIFFNESS_ADJUSTED;
+									glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+									glm::vec2 fDp2 = -fDp1;
+
+									// Get collision normal
+									glm::vec2 collisionNormal;
+									if (pSoftParticle1->SignedDistance < pOtherParticle->SignedDistance)
+									{
+										collisionNormal = -pSoftParticle1->GradientSignedDistance;
+									}
+									else
+									{
+										collisionNormal = pOtherParticle->GradientSignedDistance;
+									}
+									float d = std::min(pSoftParticle1->SignedDistance, pOtherParticle->SignedDistance);
+
+									// Calculate position adjustment
+									fDp1 += 2.5f * d * collisionNormal;
+									fDp2 += 2.5f * d * collisionNormal;
+
+									// Apply offset
+									pSoftParticle1->Position += fDp1 * PBDSTIFFNESS_ADJUSTED;
+									pOtherParticle->Position += fDp2 * PBDSTIFFNESS_ADJUSTED;
+								}
 							}
 						}
 					}
@@ -113,7 +149,7 @@ void SoftBody::Draw(sf::RenderWindow& window)
 		// Draw convex hull using the GrahamScan algorithm
 		if (m_bDrawConvexHull)
 		{
-			GrahamScan::GetInstance()->Draw(window);
+			m_ConvexHull.Draw(window);
 		}
 
 		// Draw the goal positions for all the particles
@@ -335,47 +371,54 @@ void SoftBody::SetReady(bool ready)
 	// Add the first particle add the end of the array to get a smooth bezier contour
 	m_BezierCurve.AddBezierPoint(m_ParticlesList[0]->Position);
 
-	if (!m_bBezierCurve)
-	{
-		m_BezierPoints.clear();
+	// Store the initial version of the soft body
+	m_InitialParticlesList.resize(m_ParticlesList.size());
+	std::copy(m_ParticlesList.begin(), m_ParticlesList.end(), m_InitialParticlesList.begin());
 
-		// Calculate the array of points which form the bezier curve
-		m_BezierCurve.CalculateMulticurveBezierPoints(m_BezierPoints);
+	//if (!m_bBezierCurve)
+	//{
+	//	m_BezierPoints.clear();
 
-		// Sort points
-		std::sort(m_BezierPoints.begin(), m_BezierPoints.end(), ScanlineSortY);
+	//	// Calculate the array of points which form the bezier curve
+	//	m_BezierCurve.CalculateMulticurveBezierPoints(m_BezierPoints);
 
-		bool bDraw = false;
-		glm::vec2 startingPoint = m_BezierPoints[0];
+	//	// Sort points
+	//	std::sort(m_BezierPoints.begin(), m_BezierPoints.end(), ScanlineSortY);
 
-		for (unsigned int i = 0; i < m_BezierPoints.size() - 1; i++)
-		{
-			if (m_BezierPoints[i].y - startingPoint.y > 2.0f * PARTICLE_RADIUS)
-			{
-				bDraw = true;
-				startingPoint = m_BezierPoints[i];
-			}
+	//	bool bDraw = false;
+	//	glm::vec2 startingPoint = m_BezierPoints[0];
 
-			if (bDraw)
-			{
-				glm::vec2 currentPos = m_BezierPoints[i];
-				glm::vec2 endPos = m_BezierPoints[i + 1];
-				while (currentPos.x < endPos.x)
-				{
-					// Create a soft body particle
-					DeformableParticle* sbParticle = new DeformableParticle(currentPos, m_iIndex);
+	//	for (unsigned int i = 0; i < m_BezierPoints.size() - 1; i++)
+	//	{
+	//		if (m_BezierPoints[i].y - startingPoint.y > 2.0f * PARTICLE_RADIUS)
+	//		{
+	//			bDraw = true;
+	//			startingPoint = m_BezierPoints[i];
+	//		}
 
-					// Move to the right
-					currentPos.x += 2 * PARTICLE_RADIUS;
+	//		if (bDraw)
+	//		{
+	//			glm::vec2 currentPos = m_BezierPoints[i];
+	//			glm::vec2 endPos = m_BezierPoints[i + 1];
+	//			while (currentPos.x < endPos.x)
+	//			{
+	//				// Create a soft body particle
+	//				DeformableParticle* sbParticle = new DeformableParticle(currentPos, m_iIndex);
 
-					// Add the newly created particle to the soft-body collection
-					AddSoftBodyParticle(*sbParticle);
-				}
+	//				// Set parent reference
+	//				sbParticle->SetParentRef(this);
 
-				bDraw = false;
-			}
-		}
-	}
+	//				// Move to the right
+	//				currentPos.x += 2 * PARTICLE_RADIUS;
+
+	//				// Add the newly created particle to the soft-body collection
+	//				AddSoftBodyParticle(*sbParticle);
+	//			}
+
+	//			bDraw = false;
+	//		}
+	//	}
+	//}
 
 	m_bReady = ready;
 }

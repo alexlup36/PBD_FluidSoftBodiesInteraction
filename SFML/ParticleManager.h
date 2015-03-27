@@ -47,9 +47,11 @@ public:
 
 	inline const void AddFluidParticle(FluidParticle* pFluidParticle) { m_FluidParticleList.push_back(pFluidParticle); }
 	inline std::vector<FluidParticle*> GetFluidParticles() { return m_FluidParticleList; }
+	inline FluidParticle* GetFluidParticle(int iIndex) { return m_FluidParticleList[iIndex]; }
 
 	inline const void AddDeformableParticle(DeformableParticle* pDeformableParticle) { m_DeformableParticleList.push_back(pDeformableParticle); }
 	inline std::vector<DeformableParticle*> GetDeformableParticles() { return m_DeformableParticleList; }
+	inline DeformableParticle* GetDeformableParticle(int iIndex) { return m_DeformableParticleList[iIndex]; }
 
 private:
 	// --------------------------------------------------------------------------------

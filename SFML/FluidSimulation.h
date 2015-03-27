@@ -28,6 +28,9 @@ public:
 
 		// Spatial partition
 		SpatialPartition::GetInstance().Setup();
+
+		// Set simulation type
+		SimType = SimulationType::FluidSimulation;
 	};
 
 	void Update(sf::RenderWindow& window, float dt);

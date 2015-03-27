@@ -4,6 +4,8 @@
 #include "BaseParticle.h"
 #include "ParticleManager.h"
 
+class FluidSimulation;
+
 class FluidParticle : public BaseParticle
 {
 public:

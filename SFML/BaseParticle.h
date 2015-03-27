@@ -3,6 +3,8 @@
 
 #include "Common.h"
 
+class BaseSimulation;
+
 class BaseParticle
 {
 public:
@@ -29,6 +31,20 @@ public:
 
 		return PARTICLE_RADIUS2 > (fDx * fDx) + (fDy * fDy);
 	}
+
+	inline float DistanceToLine(const glm::vec2& p1, const glm::vec2& p2)
+	{
+		float p1p2Length = glm::length(p1 - p2);
+		if (p1p2Length != 0.0f)
+		{
+			return ((p2.y - p1.y) * Position.x - (p2.x - p1.x) * Position.y + p2.x * p1.y - p2.y * p1.x) / p1p2Length;
+		}
+		else
+		{
+			return 0.0f;
+		}
+	}
+		
 
 	inline const unsigned int GetParentIndex() const { return m_iParentSimulationIndex; }
 

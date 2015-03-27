@@ -3,7 +3,12 @@
 
 #include "BaseParticle.h"
 #include "ParticleManager.h"
-//#include "SoftBody.h"
+
+struct Edge
+{
+	DeformableParticle* Start;
+	DeformableParticle* End;
+};
 
 class SoftBody;
 
@@ -50,13 +55,20 @@ public:
 		m_GoalShape.setOrigin(m_GoalShape.getLocalBounds().width / 2.0f,
 			m_GoalShape.getLocalBounds().height / 2.0f);
 	}
+
+	virtual void Update();
 	
 	void UpdateGoalShapePosition();
 	void DrawGoalShape(sf::RenderWindow& window);
 
+	float CalculateMinimumTranslationDistance();
+
 	inline void SetControlledColor() { m_Shape.setFillColor(m_ControlledColor); }
 
 	inline bool IsFixedParticle() { return m_bFixed; }
+
+	inline void SetParentRef(SoftBody* parent) { m_pParentReference = parent; }
+	inline SoftBody* GetParent() { return m_pParentReference; }
 
 	// ------------------------------------------------------------------------
 	// Public members
@@ -66,12 +78,17 @@ public:
 	glm::vec2 NewPosition;
 	glm::vec2 GoalPosition;
 
+	float SignedDistance;
+	glm::vec2 GradientSignedDistance;
+
 private:
 	static int DeformableParticleGlobalIndex;
 
 	// ------------------------------------------------------------------------
 	// Private members
 	// ------------------------------------------------------------------------
+
+	SoftBody* m_pParentReference;
 
 	// Fixed particle infinite mass
 	bool m_bFixed;
@@ -80,6 +97,10 @@ private:
 	sf::Color m_ControlledColor;
 
 	sf::CircleShape m_GoalShape;
+
+	glm::vec2 intersectionPoint;
+
+	Edge m_ClosestEdge;
 };
 
 #endif // DEFORMABLEPARTICLE_H

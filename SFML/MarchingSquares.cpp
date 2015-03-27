@@ -100,34 +100,34 @@ void MarchingSquares::ProcessMarchingSquares(FluidSimulation* fluidSim, sf::Rend
 			case 0:
 				break;
 			case 1:
-				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].BottomEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].BottomEdgeIntersection, sf::Color::White);
 				break;
 
 			case 2:
-				DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection, sf::Color::White);
 				break;
 
 			case 3:
-				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].RightEdgeIntersection, sf::Color::White);
 				break;
 
 			case 4:
-				DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].RightEdgeIntersection, sf::Color::White);
 				break;
 
 			case 5:
 			{
-				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection);
-				DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection, sf::Color::White);
+				DrawLine(window, m_Map[i][j].BottomEdgeIntersection, m_Map[i][j].RightEdgeIntersection, sf::Color::White);
 				break;
 			}
 
 			case 6:
-				DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].BottomEdgeIntersection);
+				DrawLine(window, m_Map[i][j].TopEdgeIntersection, m_Map[i][j].BottomEdgeIntersection, sf::Color::White);
 				break;
 
 			case 7:
-				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection);
+				DrawLine(window, m_Map[i][j].LeftEdgeIntersection, m_Map[i][j].TopEdgeIntersection, sf::Color::White);
 				break;
 			}
 		}

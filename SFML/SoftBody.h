@@ -31,6 +31,7 @@ public:
 	}
 
 	inline bool IsReady() { return m_bReady; }
+	inline GrahamScan& GetConvexHull() { return m_ConvexHull; }
 
 	inline std::vector<DeformableParticle*>& GetParticleList() { return m_ParticlesList; }
 
@@ -54,8 +55,11 @@ private:
 
 	std::vector<glm::vec2> m_BezierPoints;
 	BezierCurve m_BezierCurve;
+	GrahamScan m_ConvexHull;
 
 	std::vector<DeformableParticle*> m_ParticlesList;
+	std::vector<DeformableParticle*> m_InitialParticlesList;
+	unsigned int m_iParticleListSize;
 
 	void ShapeMatching(float dt);
 	void Integrate(float dt);

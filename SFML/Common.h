@@ -27,6 +27,13 @@ enum class ParticleType
 	Invalid
 };
 
+enum class SimulationType
+{
+	FluidSimulation,
+	SoftBodySimulation,
+
+	Invalid
+};
 
 
 // Window
@@ -42,8 +49,8 @@ const float FIXED_DELTA			= 1.0f / 30.0f;
 const int MAX_FRAMESKIP			= 1;
 const int SPEEDMULTIPLIER		= 2;
 
-const int PARTICLE_WIDTH_COUNT		= 10;
-const int PARTICLE_HEIGHT_COUNT		= 10;
+const int PARTICLE_WIDTH_COUNT		= 30;
+const int PARTICLE_HEIGHT_COUNT		= 30;
 const int PARTICLE_COUNT			= PARTICLE_WIDTH_COUNT * PARTICLE_HEIGHT_COUNT;
 const float PARTICLE_RADIUS			= 4.0f;
 const float PARTICLE_RADIUS_TWO		= PARTICLE_RADIUS + PARTICLE_RADIUS;
@@ -123,7 +130,7 @@ const float PBDSTIFFNESS_ADJUSTED	= 1.0f - pow(1.0f - PBDSTIFFNESS, 1.0f / SOLVE
 // Soft body constants
 // ------------------------------------------------------------------------------
 const float SOFTBODY_RESTITUTION_COEFF	= 0.9f;
-const float SOFTBODY_STIFFNESS_VALUE	= 0.1f; // 0.01f - almost rigid 1.0f - 100.0f elastic
+const float SOFTBODY_STIFFNESS_VALUE	= 0.2f; // 0.01f - almost rigid 1.0f - 100.0f elastic
 
 const float SOFTBODYPARTICLE_LEFTLIMIT		= WALL_LEFTLIMIT + PARTICLE_RADIUS;
 const float SOFTBODYPARTICLE_RIGHTLIMIT		= WALL_RIGHTLIMIT - PARTICLE_RADIUS;
@@ -138,6 +145,7 @@ const unsigned int MAPWIDTH		= (unsigned int)(WindowResolution.x / BOXSIZE) - 1;
 // Methods
 void DrawLine(sf::RenderWindow& window,
 	const glm::vec2& p1,
-	const glm::vec2& p2);
+	const glm::vec2& p2,
+	const sf::Color& color);
 
 #endif // COMMON_H
