@@ -63,6 +63,8 @@ public:
 	float InverseMass;
 
 	glm::vec2 Position;
+	glm::vec2 LocalPosition;
+	glm::vec2 PredictedPosition;
 	glm::vec2 Velocity;
 
 protected:

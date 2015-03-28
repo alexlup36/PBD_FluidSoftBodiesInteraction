@@ -6,6 +6,7 @@
 
 #include "Common.h"
 #include "FluidParticle.h"
+#include "DeformableParticle.h"
 #include "SpatialPartition.h"
 #include "BaseSimulation.h"
 
@@ -55,13 +56,15 @@ private:
 	void DampVelocities();
 	void CalculatePredictedPositions(sf::RenderWindow& window, float dt);
 	void FindNeighborParticles();
-	void UpdateActualPosAndVelocities(float dt);
+	void UpdateActualPosAndVelocities(float dt, std::vector<std::vector<FluidParticle*>>& fluidNeighbors);
 	void GenerateCollisionConstraints(sf::RenderWindow& window);
-	void XSPH_Viscosity(FluidParticle& particle);
+	void XSPH_Viscosity(FluidParticle& particle, std::vector<FluidParticle*>& neighbors);
 
 	// ------------------------------------------------------------------------
 
-	void ComputeParticleConstraint(FluidParticle& particle, std::vector<FluidParticle*>& pNeighborList);
+	void ComputeParticleConstraint(FluidParticle& particle,
+		const std::vector<FluidParticle*>& pNeighborFluidList,
+		const std::vector<DeformableParticle*>& pNeighborSoftList);
 
 	// ------------------------------------------------------------------------
 

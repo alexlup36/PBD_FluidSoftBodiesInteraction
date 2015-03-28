@@ -33,7 +33,6 @@ public:
 
 		// Position
 		OriginalPosition	= position;
-		NewPosition			= position;
 		GoalPosition		= position;
 
 		// Fixed
@@ -75,7 +74,6 @@ public:
 	// ------------------------------------------------------------------------
 
 	glm::vec2 OriginalPosition;
-	glm::vec2 NewPosition;
 	glm::vec2 GoalPosition;
 
 	float SignedDistance;

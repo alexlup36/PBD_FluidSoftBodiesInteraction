@@ -95,7 +95,7 @@ void SoftBody::Update(float dt)
 									pOtherParticle->SignedDistance < 0.0f)
 								{
 									// Particle-particle collision
-									glm::vec2 p1p2 = pSoftParticle1->Position - pOtherParticle->Position;
+									glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
 									float fDistance = glm::length(p1p2);
 
 									glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
@@ -105,11 +105,11 @@ void SoftBody::Update(float dt)
 									glm::vec2 collisionNormal;
 									if (pSoftParticle1->SignedDistance < pOtherParticle->SignedDistance)
 									{
-										collisionNormal = -pSoftParticle1->GradientSignedDistance;
+										collisionNormal = pSoftParticle1->GradientSignedDistance;
 									}
 									else
 									{
-										collisionNormal = pOtherParticle->GradientSignedDistance;
+										collisionNormal = -pOtherParticle->GradientSignedDistance;
 									}
 									float d = std::min(pSoftParticle1->SignedDistance, pOtherParticle->SignedDistance);
 
@@ -118,8 +118,8 @@ void SoftBody::Update(float dt)
 									fDp2 += 2.5f * d * collisionNormal;
 
 									// Apply offset
-									pSoftParticle1->Position += fDp1 * PBDSTIFFNESS_ADJUSTED;
-									pOtherParticle->Position += fDp2 * PBDSTIFFNESS_ADJUSTED;
+									pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
+									pOtherParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
 								}
 							}
 						}
@@ -203,7 +203,7 @@ void SoftBody::ShapeMatching(float dt)
 			fTempMass *= 100.0f;
 		}
 		fTotalMass		+= fTempMass;
-		centerOfMass	+= currentParticle.NewPosition * fTempMass;
+		centerOfMass	+= currentParticle.PredictedPosition * fTempMass;
 		centerOfMass0	+= currentParticle.OriginalPosition * fTempMass;
 	}
 	centerOfMass /= fTotalMass;
@@ -217,7 +217,7 @@ void SoftBody::ShapeMatching(float dt)
 		DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
 		float fMass = currentParticle.Mass;
 
-		glm::vec2 p = currentParticle.NewPosition - centerOfMass;
+		glm::vec2 p = currentParticle.PredictedPosition - centerOfMass;
 		glm::vec2 q = currentParticle.OriginalPosition - centerOfMass0;
 
 		// Apq
@@ -279,7 +279,7 @@ void SoftBody::ShapeMatching(float dt)
 			currentParticle.GoalPosition = centerOfMass + T * (currentParticle.OriginalPosition - centerOfMass0);
 
 			m_fStiffness = dt / SOFTBODY_STIFFNESS_VALUE;
-			currentParticle.NewPosition += SOFTBODY_STIFFNESS_VALUE * (currentParticle.GoalPosition - currentParticle.NewPosition);
+			currentParticle.PredictedPosition += SOFTBODY_STIFFNESS_VALUE * (currentParticle.GoalPosition - currentParticle.PredictedPosition);
 
 			if (m_bDrawGoalPositions)
 			{
@@ -298,8 +298,12 @@ void SoftBody::Integrate(float dt)
 	{
 		DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
 
-		currentParticle.Velocity = (currentParticle.NewPosition - currentParticle.Position) * dt1;
-		currentParticle.Position = currentParticle.NewPosition;
+		currentParticle.Velocity = (currentParticle.PredictedPosition - currentParticle.Position) * dt1;
+		currentParticle.Position = currentParticle.PredictedPosition;
+
+		// Update local position
+		glm::vec2 localOffset(WALL_LEFTLIMIT, WALL_TOPLIMIT);
+		currentParticle.LocalPosition = currentParticle.Position - localOffset;
 
 		currentParticle.Update();
 	}
@@ -312,20 +316,20 @@ void SoftBody::UpdateCollision(float dt)
 	{
 		DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
 
-		if (currentParticle.NewPosition.x < SOFTBODYPARTICLE_LEFTLIMIT || currentParticle.NewPosition.x > SOFTBODYPARTICLE_RIGHTLIMIT)
+		if (currentParticle.PredictedPosition.x < SOFTBODYPARTICLE_LEFTLIMIT || currentParticle.PredictedPosition.x > SOFTBODYPARTICLE_RIGHTLIMIT)
 		{
-			currentParticle.NewPosition.x = currentParticle.Position.x - currentParticle.Velocity.x * dt * SOFTBODY_RESTITUTION_COEFF;
-			currentParticle.NewPosition.y = currentParticle.Position.y;
+			currentParticle.PredictedPosition.x = currentParticle.Position.x - currentParticle.Velocity.x * dt * SOFTBODY_RESTITUTION_COEFF;
+			currentParticle.PredictedPosition.y = currentParticle.Position.y;
 		}
 
-		if (currentParticle.NewPosition.y < SOFTBODYPARTICLE_TOPLIMIT || currentParticle.NewPosition.y > SOFTBODYPARTICLE_BOTTOMLIMIT)
+		if (currentParticle.PredictedPosition.y < SOFTBODYPARTICLE_TOPLIMIT || currentParticle.PredictedPosition.y > SOFTBODYPARTICLE_BOTTOMLIMIT)
 		{
-			currentParticle.NewPosition.y = currentParticle.Position.y - currentParticle.Velocity.y * dt * SOFTBODY_RESTITUTION_COEFF;
-			currentParticle.NewPosition.x = currentParticle.Position.x;
+			currentParticle.PredictedPosition.y = currentParticle.Position.y - currentParticle.Velocity.y * dt * SOFTBODY_RESTITUTION_COEFF;
+			currentParticle.PredictedPosition.x = currentParticle.Position.x;
 		}
 
-		currentParticle.NewPosition.x = glm::clamp(currentParticle.NewPosition.x, SOFTBODYPARTICLE_LEFTLIMIT, SOFTBODYPARTICLE_RIGHTLIMIT);
-		currentParticle.NewPosition.y = glm::clamp(currentParticle.NewPosition.y, SOFTBODYPARTICLE_TOPLIMIT, SOFTBODYPARTICLE_BOTTOMLIMIT);
+		currentParticle.PredictedPosition.x = glm::clamp(currentParticle.PredictedPosition.x, SOFTBODYPARTICLE_LEFTLIMIT, SOFTBODYPARTICLE_RIGHTLIMIT);
+		currentParticle.PredictedPosition.y = glm::clamp(currentParticle.PredictedPosition.y, SOFTBODYPARTICLE_TOPLIMIT, SOFTBODYPARTICLE_BOTTOMLIMIT);
 	}
 }
 
@@ -343,7 +347,7 @@ void SoftBody::UpdateForces(float dt)
 			// Add gravity
 			if (currentParticle.IsFixedParticle()) continue;
 			currentParticle.Velocity += GRAVITATIONAL_ACCELERATION * dt;
-			currentParticle.NewPosition = currentParticle.Position + currentParticle.Velocity * dt;
+			currentParticle.PredictedPosition = currentParticle.Position + currentParticle.Velocity * dt;
 			currentParticle.GoalPosition = currentParticle.OriginalPosition;
 		}
 	}

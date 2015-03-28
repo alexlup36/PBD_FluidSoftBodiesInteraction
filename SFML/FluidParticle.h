@@ -18,9 +18,9 @@ public:
 		// Color
 		m_DefaultColor = sf::Color::Blue;
 		SetDefaultColor();
+		m_Shape.setOutlineThickness(0.0f);
 
 		PredictedPosition	= Position;
-		LocalPosition		= glm::vec2(Position.x - WALL_LEFTLIMIT, Position.y - WALL_TOPLIMIT);
 		PositionCorrection	= glm::vec2(0.0f);
 
 		Velocity = glm::vec2(0.0f, 0.0f);
@@ -42,8 +42,6 @@ public:
 	float DensityConstraint;
 	float Lambda;
 
-	glm::vec2 LocalPosition;
-	glm::vec2 PredictedPosition;
 	glm::vec2 PositionCorrection;
 
 private:

@@ -37,7 +37,7 @@ enum class SimulationType
 
 
 // Window
-const sf::Vector2i WindowResolution = sf::Vector2i(1366, 768);
+const sf::Vector2i WindowResolution = sf::Vector2i(1920, 1080);
 const float HorizontalOffset		= 100.0f;
 const float VerticalOffsetTop		= 150.0f;
 const float VerticalOffsetBottom	= 50.0f; 
@@ -49,8 +49,8 @@ const float FIXED_DELTA			= 1.0f / 30.0f;
 const int MAX_FRAMESKIP			= 1;
 const int SPEEDMULTIPLIER		= 2;
 
-const int PARTICLE_WIDTH_COUNT		= 30;
-const int PARTICLE_HEIGHT_COUNT		= 30;
+const int PARTICLE_WIDTH_COUNT		= 50;
+const int PARTICLE_HEIGHT_COUNT		= 50;
 const int PARTICLE_COUNT			= PARTICLE_WIDTH_COUNT * PARTICLE_HEIGHT_COUNT;
 const float PARTICLE_RADIUS			= 4.0f;
 const float PARTICLE_RADIUS_TWO		= PARTICLE_RADIUS + PARTICLE_RADIUS;
@@ -97,7 +97,7 @@ const bool PBD_COLLISION					= false;
 const bool SOFTBODY_SIMULATION				= true;
 
 // Physics constants
-const float VELOCITY_DAMPING = 0.999f;
+const float VELOCITY_DAMPING = 0.99999f;
 
 // Solver iterations
 const int SOLVER_ITERATIONS = 3;

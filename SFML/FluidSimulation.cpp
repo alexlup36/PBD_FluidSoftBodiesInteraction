@@ -15,11 +15,39 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 	CalculatePredictedPositions(window, dt);
 	FindNeighborParticles(); // might need to be done in the iterations loop
 
-	// Get the neighbors for all particles in the current update step
-	std::vector<FluidParticle*> neighbors[PARTICLE_COUNT];
-	for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
+	// Get the neighbors for all fluid particles in the current update step
+	std::vector<std::vector<FluidParticle*>> fluidNeighbors;
+	std::vector<std::vector<DeformableParticle*>> softNeighbors;
+	std::vector<std::vector<BaseParticle*>> allParticles;
+
+	fluidNeighbors.resize(m_ParticleList.size());
+	softNeighbors.resize(m_ParticleList.size());
+	allParticles.resize(m_ParticleList.size());
+
+	// For the current particle get the 
+	for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
 	{
-		SpatialPartition::GetInstance().GetNeighbors(m_ParticleList[iParticleIndex], neighbors[iParticleIndex]);
+		SpatialPartition::GetInstance().GetNeighbors(m_ParticleList[iParticleIndex], 
+			fluidNeighbors[iParticleIndex],
+			softNeighbors[iParticleIndex]);
+
+		if (softNeighbors[iParticleIndex].size() != 0)
+		{
+			//std::cout << "Neighbors found" << std::endl;
+		}
+	}
+
+	// Concatenate the fluid neighbors and soft neighbors vectors
+	for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+	{
+		for (unsigned j = 0; j < fluidNeighbors[iParticleIndex].size(); j++)
+		{
+			allParticles[iParticleIndex].push_back((BaseParticle*)fluidNeighbors[iParticleIndex][j]);
+		}
+		for (unsigned j = 0; j < softNeighbors[iParticleIndex].size(); j++)
+		{
+			allParticles[iParticleIndex].push_back((BaseParticle*)softNeighbors[iParticleIndex][j]);
+		}
 	}
 
 	// Project constraints
@@ -31,9 +59,11 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			// ------------------------------------------------------------------------
 
 			// For all particles calculate density constraint
-			for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
+			for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
 			{
-				ComputeParticleConstraint(m_ParticleList[iParticleIndex], neighbors[iParticleIndex]);
+				ComputeParticleConstraint(m_ParticleList[iParticleIndex], 
+					fluidNeighbors[iParticleIndex], 
+					softNeighbors[iParticleIndex]);
 			}
 
 			// ------------------------------------------------------------------------
@@ -41,7 +71,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			// For all particles calculate lambda
 			for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
 			{
-				ComputeLambda(m_ParticleList[iParticleIndex], neighbors[iParticleIndex]);
+				ComputeLambda(m_ParticleList[iParticleIndex], fluidNeighbors[iParticleIndex]);
 			}
 
 			// ------------------------------------------------------------------------
@@ -49,7 +79,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			// For all particles calculate the position correction - dp
 			for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
 			{
-				ComputePositionCorrection(m_ParticleList[iParticleIndex], neighbors[iParticleIndex]);
+				ComputePositionCorrection(m_ParticleList[iParticleIndex], fluidNeighbors[iParticleIndex]);
 			}
 
 			// ------------------------------------------------------------------------
@@ -109,7 +139,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 	}
 
 	// Update the actual position and velocity of the particle
-	UpdateActualPosAndVelocities(dt);
+	UpdateActualPosAndVelocities(dt, fluidNeighbors);
 
 	if (!PBD_COLLISION)
 	{
@@ -229,32 +259,59 @@ void FluidSimulation::CalculatePredictedPositions(sf::RenderWindow& window, floa
 	}
 }
 
-void FluidSimulation::UpdateActualPosAndVelocities(float dt)
+void FluidSimulation::UpdateActualPosAndVelocities(float dt, std::vector<std::vector<FluidParticle*>>& fluidNeighbors)
 {
-	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
+	for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
 	{
+		FluidParticle& currentParticle = m_ParticleList[iParticleIndex];
+
 		if (dt != 0.0f)
 		{
 			// Update velocity based on the distance offset (after correcting the position)
-			it->Velocity = (it->PredictedPosition - it->Position) / dt;
+			currentParticle.Velocity = (currentParticle.PredictedPosition - currentParticle.Position) / dt;
 		}
 
 		// Apply XSPH viscosity
 		if (XSPH_VISCOSITY)
 		{
-			XSPH_Viscosity(*it);
+			XSPH_Viscosity(currentParticle, fluidNeighbors[iParticleIndex]);
 		}
 
 		// Update position
-		it->Position = it->PredictedPosition;
+		currentParticle.Position = currentParticle.PredictedPosition;
 
 		// Update local position
 		glm::vec2 localOffset(WALL_LEFTLIMIT, WALL_TOPLIMIT);
-		it->LocalPosition = it->Position - localOffset;
+		currentParticle.LocalPosition = currentParticle.Position - localOffset;
 
 		// Update the position of the particle shape
-		it->Update();
+		currentParticle.Update();
 	}
+
+	//for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
+	//{
+	//	if (dt != 0.0f)
+	//	{
+	//		// Update velocity based on the distance offset (after correcting the position)
+	//		it->Velocity = (it->PredictedPosition - it->Position) / dt;
+	//	}
+
+	//	// Apply XSPH viscosity
+	//	if (XSPH_VISCOSITY)
+	//	{
+	//		XSPH_Viscosity(*it);
+	//	}
+
+	//	// Update position
+	//	it->Position = it->PredictedPosition;
+
+	//	// Update local position
+	//	glm::vec2 localOffset(WALL_LEFTLIMIT, WALL_TOPLIMIT);
+	//	it->LocalPosition = it->Position - localOffset;
+
+	//	// Update the position of the particle shape
+	//	it->Update();
+	//}
 }
 
 void FluidSimulation::GenerateCollisionConstraints(sf::RenderWindow& window)
@@ -328,25 +385,31 @@ void FluidSimulation::GenerateCollisionConstraints(sf::RenderWindow& window)
 
 void FluidSimulation::FindNeighborParticles()
 {
-	for (int index = 0; index < PARTICLE_COUNT; index++)
+	for (unsigned int index = 0; index < m_ParticleList.size(); index++)
 	{
 		// Repopulate the spatial manager with the particles
 		SpatialPartition::GetInstance().RegisterObject(&m_ParticleList[index]);
 	}
+
+	for (unsigned int index = 0; index < ParticleManager::GetInstance().GetDeformableParticles().size(); index++)
+	{
+		// Repopulate the spatial manager with the particles
+		SpatialPartition::GetInstance().RegisterObject((BaseParticle*)ParticleManager::GetInstance().GetDeformableParticle(index));
+	}
 }
 
-void FluidSimulation::XSPH_Viscosity(FluidParticle& particle)
+void FluidSimulation::XSPH_Viscosity(FluidParticle& particle, std::vector<FluidParticle*>& neighbors)
 {
 	// XSPH viscosity
 
 	// Get the neighbors of the current particle
-	std::vector<FluidParticle*> neighborList;
-	SpatialPartition::GetInstance().GetNeighbors(particle, neighborList);
+	//std::vector<FluidParticle*> neighborList;
+	//SpatialPartition::GetInstance().GetNeighbors(particle, neighborList);
 
 	// Velocity accumulator
 	glm::vec2 accumulatorVelocity = glm::vec2(0.0f);
 
-	for each (FluidParticle* pNeighborParticle in neighborList)
+	for each (FluidParticle* pNeighborParticle in neighbors)
 	{
 		// Use poly6 smoothing kernel
 		accumulatorVelocity += (Poly6Kernel(particle.PredictedPosition, pNeighborParticle->PredictedPosition) * (particle.Velocity - pNeighborParticle->Velocity));
@@ -358,21 +421,32 @@ void FluidSimulation::XSPH_Viscosity(FluidParticle& particle)
 
 // ------------------------------------------------------------------------
 
-void FluidSimulation::ComputeParticleConstraint(FluidParticle& particle, std::vector<FluidParticle*>& pNeighborList)
+void FluidSimulation::ComputeParticleConstraint(FluidParticle& particle, 
+	const std::vector<FluidParticle*>& pNeighborFluidList,
+	const std::vector<DeformableParticle*>& pNeighborSoftList)
 {
 	// Calculate the particle density using the standard SPH density estimator
-	float fAcc = 0.0f;
+	float fAccFluid = 0.0f;
+	float fAccSoft = 0.0f;
+	float fSampleDensityDifference = 550000.0f;
 
-	// Accumulate density resulting from particle-neighbor interaction
-	for (unsigned int i = 0; i < pNeighborList.size(); i++)
+	// Accumulate density resulting from particle-neighbor interaction (Fluid particles)
+	for (unsigned int i = 0; i < pNeighborFluidList.size(); i++)
 	{
 		// For the current neighbor calculate the Poly6 kernel value using the vector between the 
 		// current particle and the current neighbor
-		fAcc += Poly6Kernel(particle.PredictedPosition, pNeighborList[i]->PredictedPosition);
+		fAccFluid += Poly6Kernel(particle.PredictedPosition, pNeighborFluidList[i]->PredictedPosition);
+	}
+	// Accumulate density resulting from particle-neighbor interaction (Deformable particles)
+	for (unsigned int i = 0; i < pNeighborSoftList.size(); i++)
+	{
+		// For the current neighbor calculate the Poly6 kernel value using the vector between the 
+		// current particle and the current neighbor
+		fAccSoft += Poly6Kernel(particle.PredictedPosition, pNeighborSoftList[i]->PredictedPosition);
 	}
 
 	// Update the particle SPH density
-	particle.SPHDensity = fAcc;
+	particle.SPHDensity = fAccFluid + fSampleDensityDifference * fAccSoft;
 
 	// Calculate and update the particle density constraint value
 	particle.DensityConstraint = particle.SPHDensity * INVERSE_WATER_RESTDENSITY - 1.0f;
