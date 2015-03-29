@@ -13,42 +13,11 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 	UpdateExternalForces(dt);
 	DampVelocities();
 	CalculatePredictedPositions(window, dt);
-	FindNeighborParticles(); // might need to be done in the iterations loop
-
+	
 	// Get the neighbors for all fluid particles in the current update step
 	std::vector<std::vector<FluidParticle*>> fluidNeighbors;
 	std::vector<std::vector<DeformableParticle*>> softNeighbors;
 	std::vector<std::vector<BaseParticle*>> allParticles;
-
-	fluidNeighbors.resize(m_ParticleList.size());
-	softNeighbors.resize(m_ParticleList.size());
-	allParticles.resize(m_ParticleList.size());
-
-	// For the current particle get the 
-	for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
-	{
-		SpatialPartition::GetInstance().GetNeighbors(m_ParticleList[iParticleIndex], 
-			fluidNeighbors[iParticleIndex],
-			softNeighbors[iParticleIndex]);
-
-		if (softNeighbors[iParticleIndex].size() != 0)
-		{
-			//std::cout << "Neighbors found" << std::endl;
-		}
-	}
-
-	// Concatenate the fluid neighbors and soft neighbors vectors
-	for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
-	{
-		for (unsigned j = 0; j < fluidNeighbors[iParticleIndex].size(); j++)
-		{
-			allParticles[iParticleIndex].push_back((BaseParticle*)fluidNeighbors[iParticleIndex][j]);
-		}
-		for (unsigned j = 0; j < softNeighbors[iParticleIndex].size(); j++)
-		{
-			allParticles[iParticleIndex].push_back((BaseParticle*)softNeighbors[iParticleIndex][j]);
-		}
-	}
 
 	// Project constraints
 	int iIteration = 0;
@@ -56,6 +25,36 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 	{
 		if (FLUID_SIMULATION)
 		{
+			// ------------------------------------------------------------------------
+
+			// Update particle neighbors
+			FindNeighborParticles();
+
+			fluidNeighbors.resize(m_ParticleList.size());
+			softNeighbors.resize(m_ParticleList.size());
+			allParticles.resize(m_ParticleList.size());
+
+			// For the current particle get the 
+			for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+			{
+				SpatialPartition::GetInstance().GetNeighbors(m_ParticleList[iParticleIndex],
+					fluidNeighbors[iParticleIndex],
+					softNeighbors[iParticleIndex]);
+			}
+
+			// Concatenate the fluid neighbors and soft neighbors vectors
+			for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+			{
+				for (unsigned j = 0; j < fluidNeighbors[iParticleIndex].size(); j++)
+				{
+					allParticles[iParticleIndex].push_back((BaseParticle*)fluidNeighbors[iParticleIndex][j]);
+				}
+				for (unsigned j = 0; j < softNeighbors[iParticleIndex].size(); j++)
+				{
+					allParticles[iParticleIndex].push_back((BaseParticle*)softNeighbors[iParticleIndex][j]);
+				}
+			}
+
 			// ------------------------------------------------------------------------
 
 			// For all particles calculate density constraint
@@ -91,28 +90,46 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			}
 
 			// ------------------------------------------------------------------------
+
+			// Handle collision against deformable particles
+
+			// Get global particle list size
+			unsigned int deformableParticlesCount = ParticleManager::GetInstance().GetDeformableParticles().size();
+			
+			// Particle-particle collision detection and response
+			for (unsigned int iFluidParticleIndex = 0; iFluidParticleIndex < m_ParticleList.size(); iFluidParticleIndex++)
+			{
+				// Get the current fluid particle
+				FluidParticle* pCurrentFluidParticle = &m_ParticleList[iFluidParticleIndex];
+
+				// Get the no of deformable particles which are neighbors to the current fluid particle
+				unsigned int iDeformableParticleNeighborCount = softNeighbors[iFluidParticleIndex].size();
+
+				// Go through all the deformable particles neighbors and check for collisions
+				for (unsigned iDeformableParticleIndex = 0; 
+					iDeformableParticleIndex < iDeformableParticleNeighborCount;
+					iDeformableParticleIndex++)
+				{
+					// Get the current soft particle
+					DeformableParticle* pCurrentSoftParticle = softNeighbors[iFluidParticleIndex][iDeformableParticleIndex];
+
+					// Check if there is a collision between particles
+					if (pCurrentSoftParticle->IsColliding(*pCurrentFluidParticle))
+					{
+						glm::vec2 p1p2 = pCurrentSoftParticle->Position - pCurrentFluidParticle->Position;
+						float fDistance = glm::length(p1p2);
+
+						glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+						glm::vec2 fDp2 = -fDp1;
+
+						pCurrentSoftParticle->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
+						pCurrentFluidParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
+					}
+				}
+			}
+
+			// ------------------------------------------------------------------------
 		}
-
-		// Particle-particle collision detection and response
-		//for (int index = 0; index < PARTICLE_COUNT; index++)
-		//{
-		//	for each (FluidParticle* particle in neighbors[index])
-		//	{
-		//		// Check if there is a collision between particles
-		//		if (m_ParticleList[index].IsColliding(*particle))
-		//		{
-		//			glm::vec2 p1p2 = m_ParticleList[index].PredictedPosition -
-		//				particle->PredictedPosition;
-		//			float fDistance = glm::length(p1p2);
-
-		//			glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-		//			glm::vec2 fDp2 = -fDp1;
-
-		//			m_ParticleList[index].PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
-		//			particle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
-		//		}
-		//	}
-		//}
 		
 		if (PBD_COLLISION)
 		{

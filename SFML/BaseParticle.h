@@ -26,8 +26,8 @@ public:
 
 	inline bool IsColliding(const BaseParticle& other)
 	{
-		float fDx = Position.x - other.Position.x;
-		float fDy = Position.y - other.Position.y;
+		float fDx = PredictedPosition.x - other.PredictedPosition.x;
+		float fDy = PredictedPosition.y - other.PredictedPosition.y;
 
 		return PARTICLE_RADIUS2 > (fDx * fDx) + (fDy * fDy);
 	}

@@ -37,16 +37,10 @@ float DeformableParticle::CalculateMinimumTranslationDistance()
 
 			fMinDistance = std::numeric_limits<float>::max();
 
-			//std::cout << "Parent index: " << m_iParentSimulationIndex << std::endl;
-			//std::cout << "Particle index: " << Index << std::endl;
-
 			// Get the closest edge
 			for (unsigned int i = 0; i < edgeList.size(); i++)
 			{
 				float fDistanceToEdge = DistanceToLine(edgeList[i].Start->Position, edgeList[i].End->Position);
-
-				//std::cout << "Min distance: " << fMinDistance << std::endl;
-				//std::cout << "Current distance: " << fDistanceToEdge << std::endl;
 
 				if (abs(fDistanceToEdge) < abs(fMinDistance))
 				{
@@ -54,8 +48,6 @@ float DeformableParticle::CalculateMinimumTranslationDistance()
 					m_ClosestEdge = edgeList[i];
 				}
 			}
-
-			//std::cout << std::endl;
 		}
 	}
 
