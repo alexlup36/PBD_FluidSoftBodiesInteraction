@@ -154,8 +154,8 @@ void SoftBody::Update(float dt)
 									float d = std::min(pSoftParticle1->SignedDistance, pOtherParticle->SignedDistance);
 
 									// Calculate position adjustment
-									fDp1 += 2.5f * d * collisionNormal;
-									fDp2 += 2.5f * d * collisionNormal;
+									fDp1 -= 2.5f * d * collisionNormal;
+									fDp2 -= 2.5f * d * collisionNormal;
 
 									// Apply offset
 									pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
@@ -337,6 +337,11 @@ void SoftBody::Integrate(float dt)
 	for (unsigned int iIndex = 0; iIndex < m_ParticlesList.size(); iIndex++)
 	{
 		DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
+
+		// Use the position correction to add the influence of the fluid of the deformable body
+		currentParticle.PredictedPosition += currentParticle.PositionCorrection;
+		// Reset the position correction
+		currentParticle.PositionCorrection = glm::vec2(0.0f);
 
 		currentParticle.Velocity = (currentParticle.PredictedPosition - currentParticle.Position) * dt1;
 		currentParticle.Position = currentParticle.PredictedPosition;

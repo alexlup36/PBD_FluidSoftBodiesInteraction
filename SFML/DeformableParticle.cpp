@@ -2,6 +2,7 @@
 #include "GrahamScan.h"
 #include "BaseSimulation.h"
 #include "SoftBody.h"
+#include "SimulationManager.h"
 
 int DeformableParticle::DeformableParticleGlobalIndex = 0;
 
@@ -23,17 +24,43 @@ void DeformableParticle::DrawGoalShape(sf::RenderWindow& window)
 float DeformableParticle::CalculateMinimumTranslationDistance()
 {
 	float fMinDistance = 0.0f;
-	unsigned int iSizeDefList = ParticleManager::GetInstance().GetDeformableParticles().size();
+	//unsigned int iSizeDefList = ParticleManager::GetInstance().GetDeformableParticles().size();
 
-	for (unsigned int iGlobalIndexDef = 0; iGlobalIndexDef < iSizeDefList; iGlobalIndexDef++)
+	//for (unsigned int iGlobalIndexDef = 0; iGlobalIndexDef < iSizeDefList; iGlobalIndexDef++)
+	//{
+	//	// Get the current particle
+	//	DeformableParticle* otherParticle = ParticleManager::GetInstance().GetDeformableParticle(iGlobalIndexDef);
+	//	// Make sure it's not the same as the current instance
+	//	if (otherParticle->Index != Index)
+	//	{
+	//		// Get the edge list
+	//		std::vector<Edge> edgeList = otherParticle->GetParent()->GetConvexHull().GetEdgeList();
+
+	//		fMinDistance = std::numeric_limits<float>::max();
+
+	//		// Get the closest edge
+	//		for (unsigned int i = 0; i < edgeList.size(); i++)
+	//		{
+	//			float fDistanceToEdge = DistanceToLine(edgeList[i].Start->Position, edgeList[i].End->Position);
+
+	//			if (abs(fDistanceToEdge) < abs(fMinDistance))
+	//			{
+	//				fMinDistance = fDistanceToEdge;
+	//				m_ClosestEdge = edgeList[i];
+	//			}
+	//		}
+	//	}
+	//}
+
+	std::vector<SoftBody*> softBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+
+	for each (SoftBody* pSoftBody in softBodyList)
 	{
-		// Get the current particle
-		DeformableParticle* otherParticle = ParticleManager::GetInstance().GetDeformableParticle(iGlobalIndexDef);
 		// Make sure it's not the same as the current instance
-		if (otherParticle->Index != Index)
+		if (pSoftBody->GetSimulationIndex() != GetParent()->GetSimulationIndex())
 		{
 			// Get the edge list
-			std::vector<Edge> edgeList = otherParticle->GetParent()->GetConvexHull().GetEdgeList();
+			std::vector<Edge> edgeList = pSoftBody->GetConvexHull().GetEdgeList();
 
 			fMinDistance = std::numeric_limits<float>::max();
 

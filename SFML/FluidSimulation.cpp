@@ -122,7 +122,9 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 						glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
 						glm::vec2 fDp2 = -fDp1;
 
-						pCurrentSoftParticle->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
+						// Position correction due to interaction with fluid particle
+						pCurrentSoftParticle->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
+
 						pCurrentFluidParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
 					}
 				}
@@ -445,7 +447,7 @@ void FluidSimulation::ComputeParticleConstraint(FluidParticle& particle,
 	// Calculate the particle density using the standard SPH density estimator
 	float fAccFluid = 0.0f;
 	float fAccSoft = 0.0f;
-	float fSampleDensityDifference = 550000.0f;
+	float fSampleDensityDifference = 200000.0f;
 
 	// Accumulate density resulting from particle-neighbor interaction (Fluid particles)
 	for (unsigned int i = 0; i < pNeighborFluidList.size(); i++)

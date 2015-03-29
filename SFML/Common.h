@@ -49,8 +49,8 @@ const float FIXED_DELTA			= 1.0f / 30.0f;
 const int MAX_FRAMESKIP			= 1;
 const int SPEEDMULTIPLIER		= 2;
 
-const int PARTICLE_WIDTH_COUNT		= 40;
-const int PARTICLE_HEIGHT_COUNT		= 40;
+const int PARTICLE_WIDTH_COUNT		= 20;
+const int PARTICLE_HEIGHT_COUNT		= 20;
 const int PARTICLE_COUNT			= PARTICLE_WIDTH_COUNT * PARTICLE_HEIGHT_COUNT;
 const float PARTICLE_RADIUS			= 4.0f;
 const float PARTICLE_RADIUS_TWO		= PARTICLE_RADIUS + PARTICLE_RADIUS;
@@ -88,16 +88,16 @@ const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS - 1.0f;
 
 const glm::vec2 GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
 const bool GRAVITY_ON						= true;
-const bool XSPH_VISCOSITY					= true;
-const bool ARTIFICIAL_PRESSURE_TERM			= true;
-const bool FLUID_SIMULATION					= true;
-const bool FLUIDRENDERING_PARTICLE			= true;
+const bool XSPH_VISCOSITY					= false;
+const bool ARTIFICIAL_PRESSURE_TERM			= false;
+const bool FLUID_SIMULATION					= false;
+const bool FLUIDRENDERING_PARTICLE			= false;
 const bool FLUIDRENDERING_MARCHINGSQUARES	= false;
 const bool PBD_COLLISION					= false;
 const bool SOFTBODY_SIMULATION				= true;
 
 // Physics constants
-const float VELOCITY_DAMPING = 0.99999f;
+const float VELOCITY_DAMPING = 0.999f;
 
 // Solver iterations
 const int SOLVER_ITERATIONS = 3;

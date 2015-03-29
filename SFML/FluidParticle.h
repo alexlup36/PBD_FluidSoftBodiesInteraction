@@ -21,7 +21,6 @@ public:
 		m_Shape.setOutlineThickness(0.0f);
 
 		PredictedPosition	= Position;
-		PositionCorrection	= glm::vec2(0.0f);
 
 		Velocity = glm::vec2(0.0f, 0.0f);
 
@@ -41,8 +40,6 @@ public:
 	float SPHDensity;
 	float DensityConstraint;
 	float Lambda;
-
-	glm::vec2 PositionCorrection;
 
 private:
 	static int FluidParticleGlobalIndex;

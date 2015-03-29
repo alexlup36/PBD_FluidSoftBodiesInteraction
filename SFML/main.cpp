@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "FluidSimulation.h"
 #include "SoftBody.h"
+#include "SimulationManager.h"
 
 void DrawContainer(sf::RenderWindow& window)
 {
@@ -25,6 +26,31 @@ void DrawContainer(sf::RenderWindow& window)
 	};
 
 	window.draw(line, 8, sf::Lines);
+}
+
+void Draw(sf::RenderWindow& window, const sf::Text& stats)
+{
+	if (FLUID_SIMULATION)
+	{
+		// Fluid application draw
+		std::vector<FluidSimulation*> simulationList = SimulationManager::GetInstance().GetFluidSimulationList();
+		for each (FluidSimulation* fluidSim in simulationList)
+		{
+			fluidSim->Draw(window);
+		}
+	}
+
+	if (SOFTBODY_SIMULATION)
+	{
+		// Soft-bodies draw
+		std::vector<SoftBody*> SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+		for each (SoftBody* pSoftBody in SoftBodyList)
+		{
+			pSoftBody->Draw(window);
+		}
+	}
+
+	window.draw(stats);
 }
 
 int main()
@@ -72,6 +98,9 @@ int main()
 		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>();
 		fluidSim->BuildParticleSystem(PARTICLE_COUNT);
 		FluidSimulationList.push_back(fluidSim);
+
+		// Add the simulation to the list of simulations
+		SimulationManager::GetInstance().AddSimulation(fluidSim.get());
 	}
 	
 	// ---------------------------------------------------------------------------
@@ -79,7 +108,7 @@ int main()
 	bool bSoftBodyInput = false;
 
 	std::vector<std::shared_ptr<SoftBody>> SoftBodiesList;
-	std::shared_ptr<SoftBody> softBodyInstance = nullptr;
+	SoftBody* softBodyInstance = nullptr;
 	DeformableParticle* deformableControlledParticle = nullptr;
 	float fMinimumPickingDistance = 50.0f;
 	int iCurrentSBIndex = 0;
@@ -140,9 +169,11 @@ int main()
 								bSoftBodyInput = true;
 
 								// Initialize the current soft-body instance
-								softBodyInstance = std::make_shared<SoftBody>();
+								softBodyInstance = new SoftBody();
+
 								// Add the soft body instance to the list of soft bodies
-								SoftBodiesList.push_back(softBodyInstance);
+								//SoftBodiesList.push_back(softBodyInstance);
+								SimulationManager::GetInstance().AddSimulation(softBodyInstance);
 							}
 							
 							break;
@@ -227,7 +258,7 @@ int main()
 											currentPosition.y), softBodyInstance->GetSimulationIndex());
 
 										// Set parent reference
-										sbParticle->SetParentRef(softBodyInstance.get());
+										sbParticle->SetParentRef(softBodyInstance);
 
 										// Add the newly created particle to the soft-body collection
 										softBodyInstance->AddSoftBodyParticle(*sbParticle);
@@ -247,10 +278,12 @@ int main()
 								glm::vec2 mouseClickPos = glm::vec2(currentMousePosition.x, currentMousePosition.y);
 
 								float fMinimumDistance = std::numeric_limits<float>::max();
-								for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+
+								std::vector<SoftBody*> SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+								for each (SoftBody* pSoftBody in SoftBodyList)
 								{
 									// Get the particle list in the current soft-body
-									std::vector<DeformableParticle*>& SoftBodyParticleList = softBody->GetParticleList();
+									std::vector<DeformableParticle*>& SoftBodyParticleList = pSoftBody->GetParticleList();
 
 									for (unsigned int i = 0; i < SoftBodyParticleList.size(); i++)
 									{
@@ -261,7 +294,7 @@ int main()
 										{
 											fMinimumDistance = fDistance;
 											deformableControlledParticle = currentParticle;
-											softBodyInstance = softBody;
+											softBodyInstance = pSoftBody;
 										}
 									}
 								}
@@ -356,9 +389,10 @@ int main()
 				if (SOFTBODY_SIMULATION)
 				{
 					// Soft-bodies update
-					for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
+					std::vector<SoftBody*> SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+					for each (SoftBody* pSoftBody in SoftBodyList)
 					{
-						softBody->Update(FIXED_DELTA);
+						pSoftBody->Update(FIXED_DELTA);
 					}
 				}
 				
@@ -378,25 +412,8 @@ int main()
 		// Container draw
 		DrawContainer(window);
 		
-		if (FLUID_SIMULATION)
-		{
-			// Fluid application draw
-			for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
-			{
-				fluidSim->Draw(window);
-			}
-		}
-		
-		if (SOFTBODY_SIMULATION)
-		{
-			// Soft-bodies draw
-			for each (std::shared_ptr<SoftBody> softBody in SoftBodiesList)
-			{
-				softBody->Draw(window);
-			}
-		}
-		
-		window.draw(stats);
+		// Draw simulations
+		Draw(window, stats);
 
 		// --------------------------------------------------------------------------
 		window.display();
