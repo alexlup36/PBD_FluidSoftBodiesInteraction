@@ -245,6 +245,9 @@ void FluidSimulation::BuildParticleSystem(int iParticleCount)
 		currentPosition.y += fDy;
 		currentPosition.x = PARTICLE_LEFTLIMIT + HorizontalOffset;
 	}
+
+	// Multithreading
+	m_ThreadPool = std::make_unique<ThreadPool>();
 }
 
 void FluidSimulation::UpdateExternalForces(float dt)
@@ -259,13 +262,44 @@ void FluidSimulation::UpdateExternalForces(float dt)
 	}
 }
 
+void FluidSimulation::DampVelocitiesUpdate(int iStartIndex, int iEndIndex)
+{
+	// Do the actual update
+	for (int i = iStartIndex; i < iEndIndex; i++)
+	{
+		m_ParticleList[i].Velocity *= VELOCITY_DAMPING;
+	}
+}
+
+
 void FluidSimulation::DampVelocities()
 {
+	// Damp velocity - Multithreading
+
+	// List of threads
+	std::vector<std::thread> ThreadList;
+
+	for (unsigned int iThreadIndex = 0; iThreadIndex < 6; iThreadIndex++)
+	{		
+		// Calculate the start and end index to process for the current thread
+		int iStep = m_ParticleList.size() / 6;
+
+		int iStartIndex = iStep * iThreadIndex;
+		int iEndIndex = iStep * (iThreadIndex + 1);
+
+		if (iThreadIndex == 6 - 1)
+		{
+			iEndIndex = m_ParticleList.size();
+		}
+
+		m_ThreadPool->enqueue(std::bind(&FluidSimulation::DampVelocitiesUpdate, this, iStartIndex, iEndIndex));
+	}
+
 	// Damp velocity
-	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
+	/*for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
 		it->Velocity = it->Velocity * VELOCITY_DAMPING;
-	}
+	}*/
 }
 
 void FluidSimulation::CalculatePredictedPositions(sf::RenderWindow& window, float dt)

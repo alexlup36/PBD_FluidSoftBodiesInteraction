@@ -3,12 +3,17 @@
 
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include "Common.h"
 #include "FluidParticle.h"
 #include "DeformableParticle.h"
 #include "SpatialPartition.h"
 #include "BaseSimulation.h"
+
+// Multithreading
+#include "ThreadPool.h"
+
 
 class FluidSimulation : public BaseSimulation
 {
@@ -46,6 +51,9 @@ private:
 
 	// -------------------------------------------------------------------------------
 
+	// Multithreading
+	std::unique_ptr<ThreadPool> m_ThreadPool;
+
 	std::vector<FluidParticle> m_ParticleList;
 
 	std::vector<ContainerConstraint> m_ContainerConstraints;
@@ -54,6 +62,9 @@ private:
 
 	void UpdateExternalForces(float dt);
 	void DampVelocities();
+
+	void DampVelocitiesUpdate(int iStartIndex, int iEndIndex);
+
 	void CalculatePredictedPositions(sf::RenderWindow& window, float dt);
 	void FindNeighborParticles();
 	void UpdateActualPosAndVelocities(float dt, std::vector<std::vector<FluidParticle*>>& fluidNeighbors);

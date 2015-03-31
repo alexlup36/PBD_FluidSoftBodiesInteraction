@@ -7,6 +7,20 @@
 #include "SoftBody.h"
 #include "SimulationManager.h"
 
+#include "ThreadPool.h"
+
+void Test(int iStartIndex, int iEndIndex)
+{
+	std::cout << "Function call startIndex " << iStartIndex << ";" << std::endl;
+	std::cout << "Function call endIndex " << iEndIndex << ";" << std::endl;
+}
+
+void f2(int i)
+{
+	std::cout << "F2" << i << ";" << std::endl;
+}
+
+
 void DrawContainer(sf::RenderWindow& window)
 {
 	// Draw limits
@@ -55,6 +69,17 @@ void Draw(sf::RenderWindow& window, const sf::Text& stats)
 
 int main()
 {
+	/*ThreadPool threadPool;
+	threadPool.enqueue(std::bind(&Test, 1, 2));
+	threadPool.enqueue(std::bind(&Test, 2, 3));
+	threadPool.enqueue(std::bind(&Test, 3, 4));
+	threadPool.enqueue(std::bind(&Test, 4, 5));
+	threadPool.enqueue(std::bind(&Test, 5, 6));
+	threadPool.enqueue(std::bind(&Test, 6, 7));
+	threadPool.enqueue(std::bind(&Test, 7, 8));
+	threadPool.enqueue(std::bind(&Test, 8, 9));
+	threadPool.enqueue(std::bind(&Test, 0, 1));*/
+
 	// ---------------------------------------------------------------------------
 	// Window
 	bool IsFullScreen = false;
