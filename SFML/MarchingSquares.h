@@ -67,13 +67,13 @@ private:
 		x = x * (1.5f - xhalf * x * x);     // One round of Newton's method 
 		return x;
 	}
-	inline float CalculateEquation(const FluidParticle& particle, unsigned int x, unsigned int y)
+	inline float CalculateEquation(const FluidParticle* particle, unsigned int x, unsigned int y)
 	{
-		float fParticleX = particle.Position.x;
-		float fParticleY = particle.Position.y;
+		float fParticleX = particle->Position.x;
+		float fParticleY = particle->Position.y;
 
 		float invSqrt = InvSqrt((x - fParticleX) * (x - fParticleX) + (y - fParticleY) * (y - fParticleY));
-		return 0.5f * particle.Radius * invSqrt;
+		return 0.5f * particle->Radius * invSqrt;
 	}
 
 	// Members

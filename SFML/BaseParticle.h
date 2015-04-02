@@ -3,6 +3,8 @@
 
 #include "Common.h"
 
+#include <set>
+
 class BaseSimulation;
 
 class BaseParticle
@@ -18,6 +20,14 @@ public:
 
 	virtual void Update();
 	virtual void Draw(sf::RenderWindow& window);
+
+	// Neighbors
+	void UpdateNeighbors();
+	inline std::vector<int>& GetFluidNeighbors() { return m_FluidNeighborParticles; }
+	inline std::vector<int>& GetSoftNeighbors() { return m_DeformableNeighborParticles; }
+
+	void UpdateCellIds();
+	std::set<int>& GetCellIDsList() { return m_cellIDsList; }
 
 	// Colors
 	inline void SetDefaultColor() { m_Shape.setFillColor(m_DefaultColor); }
@@ -85,6 +95,12 @@ protected:
 
 	// Particle shape
 	sf::CircleShape m_Shape;
+
+	std::vector<int> m_FluidNeighborParticles;
+	std::vector<int> m_DeformableNeighborParticles;
+
+	// List of IDs of the cell the current particle is in
+	std::set<int> m_cellIDsList;
 };
 
 #endif // BASEPARTICLE_H

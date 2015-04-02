@@ -9,14 +9,14 @@ class FluidSimulation;
 class FluidParticle : public BaseParticle
 {
 public:
-	FluidParticle(const glm::vec2& position, unsigned int iParentIndex)
+	FluidParticle(const glm::vec2& position, const sf::Color& color, unsigned int iParentIndex)
 		: BaseParticle(position, iParentIndex)
 	{
 		// Index
 		Index = FluidParticleGlobalIndex++;
 
 		// Color
-		m_DefaultColor = sf::Color::Blue;
+		m_DefaultColor = color;
 		SetDefaultColor();
 		m_Shape.setOutlineThickness(0.0f);
 

@@ -7,19 +7,6 @@
 #include "SoftBody.h"
 #include "SimulationManager.h"
 
-#include "ThreadPool.h"
-
-void Test(int iStartIndex, int iEndIndex)
-{
-	std::cout << "Function call startIndex " << iStartIndex << ";" << std::endl;
-	std::cout << "Function call endIndex " << iEndIndex << ";" << std::endl;
-}
-
-void f2(int i)
-{
-	std::cout << "F2" << i << ";" << std::endl;
-}
-
 
 void DrawContainer(sf::RenderWindow& window)
 {
@@ -69,17 +56,6 @@ void Draw(sf::RenderWindow& window, const sf::Text& stats)
 
 int main()
 {
-	/*ThreadPool threadPool;
-	threadPool.enqueue(std::bind(&Test, 1, 2));
-	threadPool.enqueue(std::bind(&Test, 2, 3));
-	threadPool.enqueue(std::bind(&Test, 3, 4));
-	threadPool.enqueue(std::bind(&Test, 4, 5));
-	threadPool.enqueue(std::bind(&Test, 5, 6));
-	threadPool.enqueue(std::bind(&Test, 6, 7));
-	threadPool.enqueue(std::bind(&Test, 7, 8));
-	threadPool.enqueue(std::bind(&Test, 8, 9));
-	threadPool.enqueue(std::bind(&Test, 0, 1));*/
-
 	// ---------------------------------------------------------------------------
 	// Window
 	bool IsFullScreen = false;
@@ -121,11 +97,18 @@ int main()
 	if (FLUID_SIMULATION)
 	{
 		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>();
-		fluidSim->BuildParticleSystem(PARTICLE_COUNT);
+		fluidSim->BuildParticleSystem(glm::vec2(100.0f, 150.0f), sf::Color::Green, PARTICLE_COUNT);
 		FluidSimulationList.push_back(fluidSim);
 
 		// Add the simulation to the list of simulations
 		SimulationManager::GetInstance().AddSimulation(fluidSim.get());
+
+
+		std::shared_ptr<FluidSimulation> fluidSim2 = std::make_shared<FluidSimulation>();
+		fluidSim2->BuildParticleSystem(glm::vec2(600.0f, 150.0f), sf::Color::Blue, PARTICLE_COUNT);
+		FluidSimulationList.push_back(fluidSim2);
+
+		SimulationManager::GetInstance().AddSimulation(fluidSim2.get());
 	}
 	
 	// ---------------------------------------------------------------------------
@@ -398,6 +381,9 @@ int main()
 		currentTime = newTime;
 		fTimeAccumulator += fFrameTime;
 
+		// Get the total particle count
+		unsigned int iParticleCount = ParticleManager::GetInstance().GetParticles().size();
+
 		while (fTimeAccumulator > iNextGameTick && loops < MAX_FRAMESKIP) 
 		{
 			for (int speedCounter = 0; speedCounter < SPEEDMULTIPLIER; speedCounter++)
@@ -423,7 +409,7 @@ int main()
 				
 				std::string fps = "FPS: " + std::to_string(1.0f / intervalTime.asSeconds()) + "\n";
 				std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
-				std::string particleCount = "Particles: " + std::to_string(PARTICLE_COUNT) + "\n";
+				std::string particleCount = "Particles: " + std::to_string(iParticleCount) + "\n";
 				std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
 				std::string gravityOn = "Gravity: " + gravityStatus + "\n";
 

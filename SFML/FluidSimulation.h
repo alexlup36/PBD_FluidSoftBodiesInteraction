@@ -12,7 +12,9 @@
 #include "BaseSimulation.h"
 
 // Multithreading
-#include "ThreadPool.h"
+#ifdef MULTITHREADING
+#include <boost/threadpool.hpp>
+#endif // MULTITHREADING
 
 
 class FluidSimulation : public BaseSimulation
@@ -42,56 +44,68 @@ public:
 	void Update(sf::RenderWindow& window, float dt);
 	void Draw(sf::RenderWindow& window);
 
-	void BuildParticleSystem(int iParticleCount);
+	void BuildParticleSystem(const glm::vec2& startPosition, const sf::Color& color, int iParticleCount);
 
 	glm::vec2 GetRandomPosWithinLimits();
-	inline const std::vector<FluidParticle>& GetFluidParticleList() { return m_ParticleList; }
+	inline const std::vector<FluidParticle*>& GetFluidParticleList() { return m_ParticleList; }
 
 private:
 
 	// -------------------------------------------------------------------------------
+	// Multithreading ----------------------------------------------------------------
+	// -------------------------------------------------------------------------------
 
-	// Multithreading
-	std::unique_ptr<ThreadPool> m_ThreadPool;
+#ifdef MULTITHREADING
+	
+	std::unique_ptr<boost::threadpool::pool> m_ThreadPool;
+	typedef boost::function<void()> Task;
+	std::vector<Task> taskList;
 
-	std::vector<FluidParticle> m_ParticleList;
+#endif // MULTITHREADING
 
+	// -------------------------------------------------------------------------------
+	// Member variables --------------------------------------------------------------
+	// -------------------------------------------------------------------------------
+
+	std::vector<FluidParticle*> m_ParticleList;
 	std::vector<ContainerConstraint> m_ContainerConstraints;
+
+	ParticleManager* m_ParticleManager;
 
 	void DrawContainer(sf::RenderWindow& window);
 
 	void UpdateExternalForces(float dt);
 	void DampVelocities();
 
-	void DampVelocitiesUpdate(int iStartIndex, int iEndIndex);
-
 	void CalculatePredictedPositions(sf::RenderWindow& window, float dt);
+	
 	void FindNeighborParticles();
-	void UpdateActualPosAndVelocities(float dt, std::vector<std::vector<FluidParticle*>>& fluidNeighbors);
+	void RegisterFluidObject(int iStartIndex, int iEndIndex);
+	void RegisterDeformableObject(int iStartIndex, int iEndIndex);
+
+	void UpdateActualPosAndVelocities(float dt);
 	void GenerateCollisionConstraints(sf::RenderWindow& window);
-	void XSPH_Viscosity(FluidParticle& particle, std::vector<FluidParticle*>& neighbors);
+	void XSPH_Viscosity(FluidParticle* particle);
 
 	// ------------------------------------------------------------------------
 
-	void ComputeParticleConstraint(FluidParticle& particle,
-		const std::vector<FluidParticle*>& pNeighborFluidList,
-		const std::vector<DeformableParticle*>& pNeighborSoftList);
+	void ComputeParticleConstraint(FluidParticle* particle);
 
 	// ------------------------------------------------------------------------
 
-	glm::vec2 ComputeParticleGradientConstraint(FluidParticle& particle, FluidParticle& neighbor, std::vector<FluidParticle*>& pParticleNeighborList);
+	glm::vec2 ComputeParticleGradientConstraint(FluidParticle* particle, FluidParticle* neighbor);
 
 	// ------------------------------------------------------------------------
 
-	void ComputeLambda(FluidParticle& particle, std::vector<FluidParticle*>& pParticleNeighborList);
+	void ComputeLambda(FluidParticle* particle);
 
 	// ------------------------------------------------------------------------
 
-	void ComputePositionCorrection(FluidParticle& particle, std::vector<FluidParticle*>& pParticleNeighborList);
+	void ComputePositionCorrection(FluidParticle* particle);
 
 	// ------------------------------------------------------------------------
 
-	float ComputeArtificialPressureTerm(const FluidParticle& p1, const FluidParticle& p2);
+	float ComputeArtificialPressureTerm(const FluidParticle* p1, const FluidParticle* p2);
 
 	// ------------------------------------------------------------------------
 

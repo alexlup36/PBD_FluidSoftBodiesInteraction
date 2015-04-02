@@ -21,9 +21,12 @@ public:
 	void Setup();
 	void ClearBuckets();
 	void RegisterObject(BaseParticle* particle);
-	void GetNeighbors(const BaseParticle& particle,
+	void GetNeighbors(BaseParticle& particle,
 		std::vector<FluidParticle*>& nearbyFluidParticleList,
-		std::vector<DeformableParticle*>& nearbyDeformableParticleList);
+		std::vector<DeformableParticle*>& nearbyDeformableParticleList,
+		std::vector<BaseParticle*>& allParticles);
+
+	inline std::map<int, std::vector<BaseParticle*>>& GetBuckets() { return m_Buckets; }
 
 private:
 	// -----------------------------------------------------------------------------
@@ -38,6 +41,9 @@ private:
 	std::map<int, std::vector<BaseParticle*>> m_Buckets;
 
 	void GetIdForObject(const BaseParticle& particle, std::set<int>& cellIDList);
+
+	// Multithreading
+	std::mutex m_BucketAccessMutex;
 };
 
 #endif // SPATIAL_PARTITION

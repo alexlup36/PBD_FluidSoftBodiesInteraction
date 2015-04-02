@@ -1,5 +1,7 @@
 #include "BaseParticle.h"
 
+#include "SpatialPartition.h"
+
 int BaseParticle::ParticleGlobalIndex = 0;
 
 BaseParticle::BaseParticle(const glm::vec2& position, unsigned int parentIndex)
@@ -36,9 +38,73 @@ void BaseParticle::Update()
 {
 	// Update the position of the shape
 	m_Shape.setPosition(sf::Vector2<float>(Position.x, Position.y));
+
+	// Reset cell ids
+	m_cellIDsList.clear();
 }
 
 void BaseParticle::Draw(sf::RenderWindow& window)
 {
 	window.draw(m_Shape);
+}
+
+void BaseParticle::UpdateNeighbors()
+{
+	// Clear the neighbor lists
+	m_FluidNeighborParticles.clear();
+	m_DeformableNeighborParticles.clear();
+
+	// Update neighbors
+	std::map<int, std::vector<BaseParticle*>>& buckets = SpatialPartition::GetInstance().GetBuckets();
+
+	for (std::set<int>::iterator it = m_cellIDsList.begin(); it != m_cellIDsList.end(); it++)
+	{
+		std::vector<BaseParticle*>& currentBucket = buckets[*it];
+		unsigned int iCurrentBucketSize = currentBucket.size();
+
+		for (unsigned int index = 0; index < iCurrentBucketSize; index++)
+		{
+			// Get the current element
+			BaseParticle* pCurrentParticle = currentBucket[index];
+
+			if (pCurrentParticle->Index != Index)
+			{
+				if (pCurrentParticle->ParticleType == ParticleType::FluidParticle)
+				{
+					m_FluidNeighborParticles.push_back(pCurrentParticle->GlobalIndex);
+				}
+				else
+				{
+					m_DeformableNeighborParticles.push_back(pCurrentParticle->GlobalIndex);
+				}
+			}
+		}
+	}
+}
+
+void BaseParticle::UpdateCellIds()
+{
+	float fXPos = LocalPosition.x;
+	float fYPos = LocalPosition.y;
+	float fRadius = Radius;
+
+	// Top left corner
+	int iCellIndex = (int)(std::floor((fXPos - fRadius) / CELL_SIZE) +
+		std::floor((fYPos - fRadius) / CELL_SIZE) * CELL_COLS);
+	m_cellIDsList.insert(iCellIndex);
+
+	// Top right corner
+	iCellIndex = (int)(std::floor((fXPos + fRadius) / CELL_SIZE) +
+		std::floor((fYPos - fRadius) / CELL_SIZE) * CELL_COLS);
+	m_cellIDsList.insert(iCellIndex);
+
+	// Bottom left corner
+	iCellIndex = (int)(std::floor((fXPos - fRadius) / CELL_SIZE) +
+		std::floor((fYPos + fRadius) / CELL_SIZE) * CELL_COLS);
+	m_cellIDsList.insert(iCellIndex);
+
+	// Bottom right corner
+	iCellIndex = (int)(std::floor((fXPos + fRadius) / CELL_SIZE) +
+		std::floor((fYPos + fRadius) / CELL_SIZE) * CELL_COLS);
+	m_cellIDsList.insert(iCellIndex);
 }

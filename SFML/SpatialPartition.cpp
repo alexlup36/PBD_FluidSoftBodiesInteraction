@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+// ------------------------------------------------------------------------
 
 void SpatialPartition::Setup()
 {
@@ -11,22 +12,41 @@ void SpatialPartition::Setup()
 	}
 }
 
+// ------------------------------------------------------------------------
+
 void SpatialPartition::ClearBuckets()
 {
 	m_Buckets.clear();
 }
 
+// ------------------------------------------------------------------------
+
 void SpatialPartition::RegisterObject(BaseParticle* particle)
 {
 	// Get a list of ids of the cell the current particle is in
-	std::set<int> cellIDsList;
-	GetIdForObject(*particle, cellIDsList);
+	particle->UpdateCellIds();
+	std::set<int>& cellIDsList = particle->GetCellIDsList();
+
+#ifdef MULTITHREADING
+
+	m_BucketAccessMutex.lock();
+
+#endif // MULTITHREADING
 
 	for each (auto cellId in cellIDsList)
 	{
 		m_Buckets[cellId].push_back(particle);
 	}
+
+#ifdef MULTITHREADING
+
+	m_BucketAccessMutex.unlock();
+
+#endif // MULTITHREADING
+
 }
+
+// ------------------------------------------------------------------------
 
 void SpatialPartition::GetIdForObject(const BaseParticle& particle, std::set<int>& cellIDList)
 {
@@ -55,56 +75,39 @@ void SpatialPartition::GetIdForObject(const BaseParticle& particle, std::set<int
 	cellIDList.insert(iCellIndex);
 }
 
-void SpatialPartition::GetNeighbors(const BaseParticle& particle, 
+// ------------------------------------------------------------------------
+
+void SpatialPartition::GetNeighbors(BaseParticle& particle, 
 	std::vector<FluidParticle*>& nearbyFluidParticleList,
-	std::vector<DeformableParticle*>& nearbyDeformableParticleList)
+	std::vector<DeformableParticle*>& nearbyDeformableParticleList,
+	std::vector<BaseParticle*>& allParticles)
 {
-	std::set<int> cellIDsList;
+	std::set<int>& cellIDsList = particle.GetCellIDsList();
 
-	GetIdForObject(particle, cellIDsList);
-
-	// Test pre reserve memory for stl vector
-	int iCountFluid = 0;
-	int iCountSoft = 0;
-	for each (int id in cellIDsList)
+	for (std::set<int>::iterator it = cellIDsList.begin(); it != cellIDsList.end(); it++)
 	{
-		auto currentBucket = m_Buckets[id];
+		std::vector<BaseParticle*>& currentBucket = m_Buckets[*it];
+		unsigned int iCurrentBucketSize = currentBucket.size();
 
-		for each (BaseParticle* pParticle in currentBucket)
+		for (unsigned int index = 0; index < iCurrentBucketSize; index++)
 		{
-			if (pParticle->ParticleType == ParticleType::FluidParticle)
-			{
-				iCountFluid++;
-			}
-			else
-			{
-				iCountSoft++;
-			}
-		}
-	}
-	
-	nearbyFluidParticleList.reserve(iCountFluid);
-	nearbyDeformableParticleList.reserve(iCountSoft);
+			// Get the current element
+			BaseParticle* pCurrentParticle = currentBucket[index];
 
-	int iIndex = 0;
-
-	for each (int id in cellIDsList)
-	{
-		auto currentBucket = m_Buckets[id];
-
-		for each (BaseParticle* pParticle in currentBucket)
-		{
-			if (pParticle->Index != particle.Index)
+			if (pCurrentParticle->Index != particle.Index)
 			{
-				if (pParticle->ParticleType == ParticleType::FluidParticle)
+				if (pCurrentParticle->ParticleType == ParticleType::FluidParticle)
 				{
-					nearbyFluidParticleList.push_back((FluidParticle*)pParticle);
+					nearbyFluidParticleList.push_back((FluidParticle*)pCurrentParticle);
 				}
 				else
 				{
-					nearbyDeformableParticleList.push_back((DeformableParticle*)pParticle);
+					nearbyDeformableParticleList.push_back((DeformableParticle*)pCurrentParticle);
 				}
+				allParticles.push_back(pCurrentParticle);
 			}
 		}
 	}
 }
+
+// ------------------------------------------------------------------------

@@ -4,7 +4,7 @@
 
 float MarchingSquares::SamplePoint(FluidSimulation* sim, unsigned int x, unsigned int y)
 {
-	const std::vector<FluidParticle>& fluidParticleList = sim->GetFluidParticleList();
+	const std::vector<FluidParticle*>& fluidParticleList = sim->GetFluidParticleList();
 	// Reset the summation
 	float fSum = 0;
 
