@@ -93,18 +93,20 @@ int main()
 	// ---------------------------------------------------------------------------
 	// Application - fluid implementation
 	std::vector<std::shared_ptr<FluidSimulation>> FluidSimulationList;
+	bool bFluidInput = false;
 
 	if (FLUID_SIMULATION)
 	{
 		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>();
-		fluidSim->BuildParticleSystem(glm::vec2(100.0f, 150.0f), sf::Color::Blue, PARTICLE_COUNT);
+		fluidSim->BuildParticleSystem(glm::vec2(100.0f, 150.0f), sf::Color::Blue);
+		fluidSim->SetupMultithread();
 		FluidSimulationList.push_back(fluidSim);
 
 		// Add the simulation to the list of simulations
 		SimulationManager::GetInstance().AddSimulation(fluidSim.get());
 
 		/*std::shared_ptr<FluidSimulation> fluidSim2 = std::make_shared<FluidSimulation>();
-		fluidSim2->BuildParticleSystem(glm::vec2(600.0f, 150.0f), sf::Color::Green, PARTICLE_COUNT);
+		fluidSim2->BuildParticleSystem(glm::vec2(600.0f, 150.0f), sf::Color::Green);
 		FluidSimulationList.push_back(fluidSim2);
 
 		SimulationManager::GetInstance().AddSimulation(fluidSim2.get());*/
@@ -179,10 +181,19 @@ int main()
 								softBodyInstance = new SoftBody();
 
 								// Add the soft body instance to the list of soft bodies
-								//SoftBodiesList.push_back(softBodyInstance);
 								SimulationManager::GetInstance().AddSimulation(softBodyInstance);
 							}
 							
+							break;
+						}
+
+						case sf::Keyboard::F:
+						{
+							if (FLUID_SIMULATION)
+							{
+								bFluidInput = true;
+							}
+
 							break;
 						}
 
@@ -236,6 +247,19 @@ int main()
 				{
 					if (event.key.code == sf::Mouse::Left)
 					{
+						if (bFluidInput)
+						{
+							// Clamp the click position to the container limits
+							currentMousePosition.x = (int)glm::clamp((float)currentMousePosition.x, WALL_LEFTLIMIT, WALL_RIGHTLIMIT);
+							currentMousePosition.y = (int)glm::clamp((float)currentMousePosition.y, WALL_TOPLIMIT, WALL_BOTTOMLIMIT);
+
+							FluidSimulation* fluidsList = SimulationManager::GetInstance().GetFluidSimulationList()[0];
+							fluidsList[0].AddFluidParticles(glm::vec2(currentMousePosition.x, currentMousePosition.y), sf::Color::Red);
+							fluidsList[0].SetupMultithread();
+
+							bFluidInput = false;
+						}
+
 						// ------------------------------------------------------------------------------------------------
 						// Soft body add particle
 						if (SOFTBODY_SIMULATION)

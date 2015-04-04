@@ -3,6 +3,14 @@
 
 #include "Common.h"
 
+enum class SimulationType
+{
+	FluidSimulation,
+	SoftBodySimulation,
+
+	Invalid
+};
+
 class BaseSimulation
 {
 public:

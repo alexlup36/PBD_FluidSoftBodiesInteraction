@@ -7,6 +7,14 @@
 
 class BaseSimulation;
 
+enum class ParticleType
+{
+	FluidParticle,
+	DeformableParticle,
+
+	Invalid
+};
+
 class BaseParticle
 {
 public:

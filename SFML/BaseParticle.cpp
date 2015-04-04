@@ -58,7 +58,7 @@ void BaseParticle::UpdateNeighbors()
 	// Update neighbors
 	std::map<int, std::vector<int>>& buckets = SpatialPartition::GetInstance().GetBuckets();
 
-	for (int i = 0; i < m_cellIDsList.size(); i++)
+	for (unsigned int i = 0; i < m_cellIDsList.size(); i++)
 	{
 		std::vector<int>& currentBucket = buckets[m_cellIDsList[i]];
 		unsigned int iCurrentBucketSize = currentBucket.size();

@@ -61,6 +61,15 @@ private:
 	std::vector<DeformableParticle*> m_InitialParticlesList;
 	unsigned int m_iParticleListSize;
 
+	// Constants
+	const float SOFTBODY_RESTITUTION_COEFF = 0.9f;
+	const float SOFTBODY_STIFFNESS_VALUE = 0.2f; // 0.01f - almost rigid 1.0f - 100.0f elastic
+
+	const float SOFTBODYPARTICLE_LEFTLIMIT = WALL_LEFTLIMIT + PARTICLE_RADIUS;
+	const float SOFTBODYPARTICLE_RIGHTLIMIT = WALL_RIGHTLIMIT - PARTICLE_RADIUS;
+	const float SOFTBODYPARTICLE_TOPLIMIT = WALL_TOPLIMIT + PARTICLE_RADIUS;
+	const float SOFTBODYPARTICLE_BOTTOMLIMIT = WALL_BOTTOMLIMIT - PARTICLE_RADIUS;
+
 	void ShapeMatching(float dt);
 	void Integrate(float dt);
 	void UpdateCollision(float dt);

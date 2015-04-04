@@ -78,6 +78,13 @@ private:
 
 	// Members
 
+	// Constants
+
+	// Uniform box division fluid rendering using marching squares
+	const unsigned int BOXSIZE = (unsigned int)PARTICLE_RADIUS;
+	const unsigned int MAPHEIGHT = (unsigned int)(WindowResolution.y / BOXSIZE) - 1;
+	const unsigned int MAPWIDTH = (unsigned int)(WindowResolution.x / BOXSIZE) - 1;
+
 	// Store the information for the uniform box division in a 2d array of cells
 	std::vector<std::vector<Cell>> m_Map;
 };

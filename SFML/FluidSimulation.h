@@ -39,12 +39,19 @@ public:
 
 		// Set simulation type
 		SimType = SimulationType::FluidSimulation;
+
+		m_ThreadPool = nullptr;
 	};
 
 	void Update(sf::RenderWindow& window, float dt);
 	void Draw(sf::RenderWindow& window);
 
-	void BuildParticleSystem(const glm::vec2& startPosition, const sf::Color& color, int iParticleCount);
+	void BuildParticleSystem(const glm::vec2& startPosition, const sf::Color& color);
+#ifdef MULTITHREADING
+	void SetupMultithread();
+
+	void AddFluidParticles(const glm::vec2& position, const sf::Color& color);
+#endif // MULTITHREADING
 
 	glm::vec2 GetRandomPosWithinLimits();
 	inline const std::vector<FluidParticle*>& GetFluidParticleList() { return m_ParticleList; }
@@ -67,6 +74,44 @@ private:
 
 	// -------------------------------------------------------------------------------
 	// Member variables --------------------------------------------------------------
+	// -------------------------------------------------------------------------------
+
+	// Constants
+	const bool XSPH_VISCOSITY = true;
+	const bool ARTIFICIAL_PRESSURE_TERM = true;
+	const bool FLUIDRENDERING_PARTICLE = true;
+	const bool FLUIDRENDERING_MARCHINGSQUARES = false;
+	const bool PBD_COLLISION = false;
+
+	const int PARTICLE_WIDTH_COUNT = 40;
+	const int PARTICLE_HEIGHT_COUNT = 40;
+
+	const int PARTICLE_WIDTH_NEW = 20;
+	const int PARTICLE_HEIGHT_NEW = 20;
+
+	const float VELOCITY_DAMPING = 0.999f;
+
+	const float XSPHParam = 0.05f;
+
+	// Constants used for SPH
+	const float SMOOTHING_DISTANCE = CELL_SIZE;
+	const float SMOOTHING_DISTANCE2 = CELL_SIZE * CELL_SIZE;
+	const float SMOOTHING_DISTANCE9 = CELL_SIZE * CELL_SIZE * CELL_SIZE *
+		CELL_SIZE * CELL_SIZE * CELL_SIZE *
+		CELL_SIZE * CELL_SIZE * CELL_SIZE;
+	const float PI = 3.14159265359f;
+	const float POLY6COEFF = 315.0f / 64.0f / PI / SMOOTHING_DISTANCE9;
+	const float SIXPOLY6COEFF = 6.0f * POLY6COEFF;
+	const float WATER_RESTDENSITY = 1000.0f;
+	const float INVERSE_WATER_RESTDENSITY = 1.0f / WATER_RESTDENSITY;
+	const float ARTIFICIAL_PRESSURE = POLY6COEFF * std::pow(SMOOTHING_DISTANCE2 - 0.1f * SMOOTHING_DISTANCE2, 3.0f);
+	const float INVERSE_ARTIFICIAL_PRESSURE = 1.0f / ARTIFICIAL_PRESSURE;
+	const float SMOOTHING_DISTANCE6 = CELL_SIZE * CELL_SIZE * CELL_SIZE * CELL_SIZE * CELL_SIZE * CELL_SIZE;
+	const float SPIKYGRADCOEFF = 45.0f / PI / SMOOTHING_DISTANCE6;
+
+	// PBF constant
+	const float RELAXATION_PARAMETER = 0.0000075f;
+
 	// -------------------------------------------------------------------------------
 
 	std::vector<FluidParticle*> m_ParticleList;

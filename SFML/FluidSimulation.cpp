@@ -20,141 +20,138 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 
 	while (iIteration++ < SOLVER_ITERATIONS)
 	{
-		if (FLUID_SIMULATION)
+		// ------------------------------------------------------------------------
+			
+		FindNeighborParticles();
+
+		// ------------------------------------------------------------------------
+
+		// For the current particle get the lists of neighbors
+		for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
 		{
-			// ------------------------------------------------------------------------
-			
-			FindNeighborParticles();
+			m_ParticleList[iParticleIndex]->UpdateNeighbors();
+		}
 
-			// ------------------------------------------------------------------------
+		// ------------------------------------------------------------------------
 
-			// For the current particle get the lists of neighbors
-			for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
-			{
-				m_ParticleList[iParticleIndex]->UpdateNeighbors();
-			}
-
-			// ------------------------------------------------------------------------
-
-			// Particle constraint
+		// Particle constraint
 #ifdef MULTITHREADING
 
-			for (unsigned int i = 0; i < LambdaTaskList.size(); i++)
-			{
-				m_ThreadPool->schedule(ParticleConstratinTaskList[i]);
-			}
+		for (unsigned int i = 0; i < LambdaTaskList.size(); i++)
+		{
+			m_ThreadPool->schedule(ParticleConstratinTaskList[i]);
+		}
 
-			m_ThreadPool->wait();
+		m_ThreadPool->wait();
 
 #else
 
-			// For all particles calculate density constraint
-			for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
-			{
-				ComputeParticleConstraint(m_ParticleList[iParticleIndex]);
-			}
+		// For all particles calculate density constraint
+		for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+		{
+			ComputeParticleConstraint(m_ParticleList[iParticleIndex]);
+		}
 
 #endif // MULTITHREADING
 			
-			// ------------------------------------------------------------------------
+		// ------------------------------------------------------------------------
 
-			// Lambda
+		// Lambda
 #ifdef MULTITHREADING
 
-			for (unsigned int i = 0; i < LambdaTaskList.size(); i++)
-			{
-				m_ThreadPool->schedule(LambdaTaskList[i]);
-			}
+		for (unsigned int i = 0; i < LambdaTaskList.size(); i++)
+		{
+			m_ThreadPool->schedule(LambdaTaskList[i]);
+		}
 
-			m_ThreadPool->wait();
+		m_ThreadPool->wait();
 #else
 
-			// For all particles calculate lambda
-			for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
-			{
-				ComputeLambda(m_ParticleList[iParticleIndex]);
-			}
+		// For all particles calculate lambda
+		for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+		{
+			ComputeLambda(m_ParticleList[iParticleIndex]);
+		}
 
 #endif // MULTITHREADING
 
 			
 
-			// ------------------------------------------------------------------------
+		// ------------------------------------------------------------------------
 
-			// Position correction
+		// Position correction
 #ifdef MULTITHREADING
 
-			for (unsigned int i = 0; i < PositionCorrectionTaskList.size(); i++)
-			{
-				m_ThreadPool->schedule(PositionCorrectionTaskList[i]);
-			}
+		for (unsigned int i = 0; i < PositionCorrectionTaskList.size(); i++)
+		{
+			m_ThreadPool->schedule(PositionCorrectionTaskList[i]);
+		}
 
-			m_ThreadPool->wait();
+		m_ThreadPool->wait();
 #else
 
-			// For all particles calculate the position correction - dp
-			for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
-			{
-				ComputePositionCorrection(m_ParticleList[iParticleIndex]);
-			}
+		// For all particles calculate the position correction - dp
+		for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+		{
+			ComputePositionCorrection(m_ParticleList[iParticleIndex]);
+		}
 
 #endif // MULTITHREADING
 			
 
-			// ------------------------------------------------------------------------
+		// ------------------------------------------------------------------------
 
-			// For all particles update the predicted position
-			for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
-			{
-				FluidParticle* pCurrentParticle = *it;
+		// For all particles update the predicted position
+		for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
+		{
+			FluidParticle* pCurrentParticle = *it;
 
-				pCurrentParticle->PredictedPosition += pCurrentParticle->PositionCorrection;
-			}
+			pCurrentParticle->PredictedPosition += pCurrentParticle->PositionCorrection;
+		}
 
-			// ------------------------------------------------------------------------
+		// ------------------------------------------------------------------------
 
-			// Handle collision against deformable particles
+		// Handle collision against deformable particles
 
-			// Get global particle list size
-			unsigned int deformableParticlesCount = m_ParticleManager->GetDeformableParticles().size();
+		// Get global particle list size
+		unsigned int deformableParticlesCount = m_ParticleManager->GetDeformableParticles().size();
 			
-			// Particle-particle collision detection and response
-			for (unsigned int iFluidParticleIndex = 0; iFluidParticleIndex < m_ParticleList.size(); iFluidParticleIndex++)
+		// Particle-particle collision detection and response
+		for (unsigned int iFluidParticleIndex = 0; iFluidParticleIndex < m_ParticleList.size(); iFluidParticleIndex++)
+		{
+			// Get the current fluid particle
+			FluidParticle* pCurrentFluidParticle = m_ParticleList[iFluidParticleIndex];
+
+			// Get the no of deformable particles which are neighbors to the current fluid particle
+			unsigned int iDeformableParticleNeighborCount = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors().size();
+			std::vector<int>& deformableParticleNeighborList = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors();
+
+			// Go through all the deformable particles neighbors and check for collisions
+			for (unsigned iDeformableParticleIndex = 0; 
+				iDeformableParticleIndex < iDeformableParticleNeighborCount;
+				iDeformableParticleIndex++)
 			{
-				// Get the current fluid particle
-				FluidParticle* pCurrentFluidParticle = m_ParticleList[iFluidParticleIndex];
+				// Get the current soft particle
+				BaseParticle* pCurrentSoftParticle = m_ParticleManager->GetParticle(deformableParticleNeighborList[iDeformableParticleIndex]);
 
-				// Get the no of deformable particles which are neighbors to the current fluid particle
-				unsigned int iDeformableParticleNeighborCount = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors().size();
-				std::vector<int>& deformableParticleNeighborList = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors();
-
-				// Go through all the deformable particles neighbors and check for collisions
-				for (unsigned iDeformableParticleIndex = 0; 
-					iDeformableParticleIndex < iDeformableParticleNeighborCount;
-					iDeformableParticleIndex++)
+				// Check if there is a collision between particles
+				if (pCurrentSoftParticle->IsColliding(*pCurrentFluidParticle))
 				{
-					// Get the current soft particle
-					BaseParticle* pCurrentSoftParticle = m_ParticleManager->GetParticle(deformableParticleNeighborList[iDeformableParticleIndex]);
+					glm::vec2 p1p2 = pCurrentSoftParticle->Position - pCurrentFluidParticle->Position;
+					float fDistance = glm::length(p1p2);
 
-					// Check if there is a collision between particles
-					if (pCurrentSoftParticle->IsColliding(*pCurrentFluidParticle))
-					{
-						glm::vec2 p1p2 = pCurrentSoftParticle->Position - pCurrentFluidParticle->Position;
-						float fDistance = glm::length(p1p2);
+					glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+					glm::vec2 fDp2 = -fDp1;
 
-						glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-						glm::vec2 fDp2 = -fDp1;
+					// Position correction due to interaction with fluid particle
+					pCurrentSoftParticle->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
 
-						// Position correction due to interaction with fluid particle
-						pCurrentSoftParticle->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
-
-						pCurrentFluidParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
-					}
+					pCurrentFluidParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
 				}
 			}
-
-			// ------------------------------------------------------------------------
 		}
+
+		// ------------------------------------------------------------------------
 		
 		if (PBD_COLLISION)
 		{
@@ -199,7 +196,7 @@ void FluidSimulation::Draw(sf::RenderWindow& window)
 	if (FLUIDRENDERING_PARTICLE)
 	{
 		// Draw particles
-		for (int index = 0; index < PARTICLE_COUNT; index++)
+		for (int index = 0; index < m_ParticleList.size(); index++)
 		{
 			m_ParticleList[index]->Draw(window);
 		}
@@ -224,14 +221,10 @@ glm::vec2 FluidSimulation::GetRandomPosWithinLimits()
 // ------------------------------------------------------------------------
 
 void FluidSimulation::BuildParticleSystem(const glm::vec2& startPosition, 
-	const sf::Color& color, 
-	int iParticleCount)
+	const sf::Color& color)
 {
 	// Initialize the particle manager
 	m_ParticleManager = &ParticleManager::GetInstance();
-
-	float fWidthDistance = PARTICLE_RIGHTLIMIT - PARTICLE_LEFTLIMIT;
-	float fHeightDistance = PARTICLE_BOTTOMLIMIT - PARTICLE_TOPLIMIT;
 
 	float fDx = 3.0f * PARTICLE_RADIUS;
 	float fDy = 3.0f * PARTICLE_RADIUS;
@@ -257,12 +250,23 @@ void FluidSimulation::BuildParticleSystem(const glm::vec2& startPosition,
 		// Update current position Y
 		currentPosition.y += fDy;
 		currentPosition.x = PARTICLE_LEFTLIMIT + startPosition.x;
-	}
+	}	
+}
+
+// ------------------------------------------------------------------------
 
 #ifdef MULTITHREADING
 
+void FluidSimulation::SetupMultithread()
+{
 	unsigned int iThreadCount = 6;
-	m_ThreadPool = std::make_unique<boost::threadpool::pool>(iThreadCount);
+	if (m_ThreadPool == nullptr)
+	{
+		m_ThreadPool = std::make_unique<boost::threadpool::pool>(iThreadCount);
+	}
+	LambdaTaskList.clear();
+	PositionCorrectionTaskList.clear();
+	ParticleConstratinTaskList.clear();
 
 	// Create a list of tasks
 	for (unsigned int iThreadIndex = 0; iThreadIndex < iThreadCount; iThreadIndex++)
@@ -294,9 +298,42 @@ void FluidSimulation::BuildParticleSystem(const glm::vec2& startPosition,
 			iStartIndex,
 			iEndIndex));
 	}
+}
 
 #endif // MULTITHREADING
-	
+
+// ------------------------------------------------------------------------
+
+void FluidSimulation::AddFluidParticles(const glm::vec2& position, const sf::Color& color)
+{
+	// Initialize the particle manager
+	m_ParticleManager = &ParticleManager::GetInstance();
+
+	float fDx = 3.0f * PARTICLE_RADIUS;
+	float fDy = 3.0f * PARTICLE_RADIUS;
+
+	glm::vec2 currentPosition = glm::vec2(position.x, position.y);
+
+	for (int iLine = 0; iLine < PARTICLE_WIDTH_NEW; iLine++)
+	{
+		for (int jColumn = 0; jColumn < PARTICLE_HEIGHT_NEW; jColumn++)
+		{
+			FluidParticle* particle = new FluidParticle(currentPosition, color, GetSimulationIndex());
+
+			// Update current position X
+			currentPosition.x += fDx;
+
+			// Build particle list
+			m_ParticleList.push_back(particle);
+
+			// Add particle to the global list
+			m_ParticleManager->AddGlobalParticle(particle);
+		}
+
+		// Update current position Y
+		currentPosition.y += fDy;
+		currentPosition.x = position.x;
+	}
 }
 
 // ------------------------------------------------------------------------

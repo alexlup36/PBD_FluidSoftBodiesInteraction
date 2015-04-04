@@ -9,7 +9,7 @@ float MarchingSquares::SamplePoint(FluidSimulation* sim, unsigned int x, unsigne
 	float fSum = 0;
 
 	// Iterate through every Metaball in the world 
-	for (int i = 0; i < PARTICLE_COUNT; i++)
+	for (unsigned int i = 0; i < fluidParticleList.size(); i++)
 	{
 		fSum += CalculateEquation(fluidParticleList[i], x, y);
 	}
