@@ -59,7 +59,9 @@ private:
 	
 	std::unique_ptr<boost::threadpool::pool> m_ThreadPool;
 	typedef boost::function<void()> Task;
-	std::vector<Task> taskList;
+	std::vector<Task> LambdaTaskList;
+	std::vector<Task> PositionCorrectionTaskList;
+	std::vector<Task> ParticleConstratinTaskList;
 
 #endif // MULTITHREADING
 
@@ -80,8 +82,6 @@ private:
 	void CalculatePredictedPositions(sf::RenderWindow& window, float dt);
 	
 	void FindNeighborParticles();
-	void RegisterFluidObject(int iStartIndex, int iEndIndex);
-	void RegisterDeformableObject(int iStartIndex, int iEndIndex);
 
 	void UpdateActualPosAndVelocities(float dt);
 	void GenerateCollisionConstraints(sf::RenderWindow& window);
@@ -90,6 +90,7 @@ private:
 	// ------------------------------------------------------------------------
 
 	void ComputeParticleConstraint(FluidParticle* particle);
+	void ComputeParticleConstraintMultithread(int iStartIndex, int iEndIndex);
 
 	// ------------------------------------------------------------------------
 
@@ -98,14 +99,20 @@ private:
 	// ------------------------------------------------------------------------
 
 	void ComputeLambda(FluidParticle* particle);
+	void ComputeLambdaMultithread(int iStartIndex, int iEndIndex);
 
 	// ------------------------------------------------------------------------
 
 	void ComputePositionCorrection(FluidParticle* particle);
+	void PositionCorrectionMultithread(int iStartIndex, int iEndIndex);
 
 	// ------------------------------------------------------------------------
 
 	float ComputeArtificialPressureTerm(const FluidParticle* p1, const FluidParticle* p2);
+
+	// ------------------------------------------------------------------------
+
+	void ContainerCollisionUpdate();
 
 	// ------------------------------------------------------------------------
 

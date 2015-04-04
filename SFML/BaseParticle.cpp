@@ -1,6 +1,7 @@
 #include "BaseParticle.h"
 
 #include "SpatialPartition.h"
+#include "ParticleManager.h"
 
 int BaseParticle::ParticleGlobalIndex = 0;
 
@@ -13,7 +14,7 @@ BaseParticle::BaseParticle(const glm::vec2& position, unsigned int parentIndex)
 	m_Shape.setOutlineThickness(1.0f);
 	m_Shape.setFillColor(m_DefaultColor);
 	m_Shape.setOrigin(m_Shape.getLocalBounds().width / 2.0f, 
-		m_Shape.getLocalBounds().height / 2.0f);
+	m_Shape.getLocalBounds().height / 2.0f);
 
 	Position			= glm::vec2(position.x, position.y);
 	LocalPosition		= glm::vec2(Position.x - WALL_LEFTLIMIT, Position.y - WALL_TOPLIMIT);
@@ -38,9 +39,6 @@ void BaseParticle::Update()
 {
 	// Update the position of the shape
 	m_Shape.setPosition(sf::Vector2<float>(Position.x, Position.y));
-
-	// Reset cell ids
-	m_cellIDsList.clear();
 }
 
 void BaseParticle::Draw(sf::RenderWindow& window)
@@ -50,22 +48,25 @@ void BaseParticle::Draw(sf::RenderWindow& window)
 
 void BaseParticle::UpdateNeighbors()
 {
+	ParticleManager& particleMan = ParticleManager::GetInstance();
+	std::vector<BaseParticle*>& particleList = particleMan.GetParticles();
+
 	// Clear the neighbor lists
 	m_FluidNeighborParticles.clear();
 	m_DeformableNeighborParticles.clear();
 
 	// Update neighbors
-	std::map<int, std::vector<BaseParticle*>>& buckets = SpatialPartition::GetInstance().GetBuckets();
+	std::map<int, std::vector<int>>& buckets = SpatialPartition::GetInstance().GetBuckets();
 
-	for (std::set<int>::iterator it = m_cellIDsList.begin(); it != m_cellIDsList.end(); it++)
+	for (int i = 0; i < m_cellIDsList.size(); i++)
 	{
-		std::vector<BaseParticle*>& currentBucket = buckets[*it];
+		std::vector<int>& currentBucket = buckets[m_cellIDsList[i]];
 		unsigned int iCurrentBucketSize = currentBucket.size();
 
 		for (unsigned int index = 0; index < iCurrentBucketSize; index++)
 		{
 			// Get the current element
-			BaseParticle* pCurrentParticle = currentBucket[index];
+			BaseParticle* pCurrentParticle = particleList[currentBucket[index]];
 
 			if (pCurrentParticle->Index != Index)
 			{
@@ -84,27 +85,58 @@ void BaseParticle::UpdateNeighbors()
 
 void BaseParticle::UpdateCellIds()
 {
-	float fXPos = LocalPosition.x;
-	float fYPos = LocalPosition.y;
-	float fRadius = Radius;
+	m_cellIDsList.resize(0);
+
+	float iXPosMRad = (LocalPosition.x - Radius) * INVERSE_CELL_SIZE;
+	float iXPosPRad = (LocalPosition.x + Radius) * INVERSE_CELL_SIZE;
+	float iYPosMRad = (LocalPosition.y - Radius) * INVERSE_CELL_SIZE;
+	float iYPosPRad = (LocalPosition.y + Radius) * INVERSE_CELL_SIZE;
+
+	int iFloorXM = Floor(iXPosMRad);
+	int iFloorXP = Floor(iXPosPRad);
+	int iFloorYM = Floor(iYPosMRad);
+	int iFloorYP = Floor(iYPosPRad);
 
 	// Top left corner
-	int iCellIndex = (int)(std::floor((fXPos - fRadius) / CELL_SIZE) +
-		std::floor((fYPos - fRadius) / CELL_SIZE) * CELL_COLS);
-	m_cellIDsList.insert(iCellIndex);
+	int iCellIndex = iFloorXM + iFloorYM * CELL_COLS;
+	m_cellIDsList.push_back(iCellIndex);
 
 	// Top right corner
-	iCellIndex = (int)(std::floor((fXPos + fRadius) / CELL_SIZE) +
-		std::floor((fYPos - fRadius) / CELL_SIZE) * CELL_COLS);
-	m_cellIDsList.insert(iCellIndex);
+	iCellIndex = iFloorXP + iFloorYM * CELL_COLS;
+	if (IsUnique(iCellIndex))
+	{
+		m_cellIDsList.push_back(iCellIndex);
+	}
 
 	// Bottom left corner
-	iCellIndex = (int)(std::floor((fXPos - fRadius) / CELL_SIZE) +
-		std::floor((fYPos + fRadius) / CELL_SIZE) * CELL_COLS);
-	m_cellIDsList.insert(iCellIndex);
+	iCellIndex = iFloorXM + iFloorYP * CELL_COLS;
+	if (IsUnique(iCellIndex))
+	{
+		m_cellIDsList.push_back(iCellIndex);
+	}
 
 	// Bottom right corner
-	iCellIndex = (int)(std::floor((fXPos + fRadius) / CELL_SIZE) +
-		std::floor((fYPos + fRadius) / CELL_SIZE) * CELL_COLS);
-	m_cellIDsList.insert(iCellIndex);
+	iCellIndex = iFloorXP + iFloorYP * CELL_COLS;
+	if (IsUnique(iCellIndex))
+	{
+		m_cellIDsList.push_back(iCellIndex);
+	}
+}
+
+const bool BaseParticle::IsUnique(int element) const
+{
+	unsigned int index = 0;
+	unsigned int size = m_cellIDsList.size();
+
+	bool unique = true;
+
+	for (index = 0; index < size; index++)
+	{
+		if (element == m_cellIDsList[index])
+		{
+			return false;
+		}
+	}
+
+	return unique;
 }

@@ -27,7 +27,9 @@ public:
 	inline std::vector<int>& GetSoftNeighbors() { return m_DeformableNeighborParticles; }
 
 	void UpdateCellIds();
-	std::set<int>& GetCellIDsList() { return m_cellIDsList; }
+	const bool IsUnique(int element) const;
+	
+	std::vector<int>& GetCellIDsList() { return m_cellIDsList; }
 
 	// Colors
 	inline void SetDefaultColor() { m_Shape.setFillColor(m_DefaultColor); }
@@ -100,7 +102,7 @@ protected:
 	std::vector<int> m_DeformableNeighborParticles;
 
 	// List of IDs of the cell the current particle is in
-	std::set<int> m_cellIDsList;
+	std::vector<int> m_cellIDsList;
 };
 
 #endif // BASEPARTICLE_H

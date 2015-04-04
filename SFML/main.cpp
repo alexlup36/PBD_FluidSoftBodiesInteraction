@@ -97,18 +97,17 @@ int main()
 	if (FLUID_SIMULATION)
 	{
 		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>();
-		fluidSim->BuildParticleSystem(glm::vec2(100.0f, 150.0f), sf::Color::Green, PARTICLE_COUNT);
+		fluidSim->BuildParticleSystem(glm::vec2(100.0f, 150.0f), sf::Color::Blue, PARTICLE_COUNT);
 		FluidSimulationList.push_back(fluidSim);
 
 		// Add the simulation to the list of simulations
 		SimulationManager::GetInstance().AddSimulation(fluidSim.get());
 
-
-		std::shared_ptr<FluidSimulation> fluidSim2 = std::make_shared<FluidSimulation>();
-		fluidSim2->BuildParticleSystem(glm::vec2(600.0f, 150.0f), sf::Color::Blue, PARTICLE_COUNT);
+		/*std::shared_ptr<FluidSimulation> fluidSim2 = std::make_shared<FluidSimulation>();
+		fluidSim2->BuildParticleSystem(glm::vec2(600.0f, 150.0f), sf::Color::Green, PARTICLE_COUNT);
 		FluidSimulationList.push_back(fluidSim2);
 
-		SimulationManager::GetInstance().AddSimulation(fluidSim2.get());
+		SimulationManager::GetInstance().AddSimulation(fluidSim2.get());*/
 	}
 	
 	// ---------------------------------------------------------------------------

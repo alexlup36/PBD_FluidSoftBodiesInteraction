@@ -13,3 +13,8 @@ void DrawLine(sf::RenderWindow& window,
 
 	window.draw(line, 2, sf::Lines);
 }
+
+float QuakeLength(const glm::vec2& v)
+{
+	return SquareRootFloat(v.x * v.x + v.y * v.y);
+}

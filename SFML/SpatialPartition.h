@@ -21,12 +21,8 @@ public:
 	void Setup();
 	void ClearBuckets();
 	void RegisterObject(BaseParticle* particle);
-	void GetNeighbors(BaseParticle& particle,
-		std::vector<FluidParticle*>& nearbyFluidParticleList,
-		std::vector<DeformableParticle*>& nearbyDeformableParticleList,
-		std::vector<BaseParticle*>& allParticles);
 
-	inline std::map<int, std::vector<BaseParticle*>>& GetBuckets() { return m_Buckets; }
+	inline std::map<int, std::vector<int>>& GetBuckets() { return m_Buckets; }
 
 private:
 	// -----------------------------------------------------------------------------
@@ -38,7 +34,7 @@ private:
 	void operator=(SpatialPartition const&) = delete;
 	// -----------------------------------------------------------------------------
 
-	std::map<int, std::vector<BaseParticle*>> m_Buckets;
+	std::map<int, std::vector<int>> m_Buckets;
 
 	void GetIdForObject(const BaseParticle& particle, std::set<int>& cellIDList);
 

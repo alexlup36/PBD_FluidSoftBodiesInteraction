@@ -17,7 +17,10 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-//#define MULTITHREADING
+#define MULTITHREADING
+
+// SSE1
+#include <emmintrin.h>
 
 #define EPS 0.001f
 
@@ -41,6 +44,28 @@ enum class SimulationType
 	Invalid
 };
 
+inline int Floor(float f)
+{
+	// SSE1 instructions for float->int
+	return _mm_cvtt_ss2si(_mm_load_ss(&f));    
+}
+
+inline float SquareRootFloat(float number) {
+	long i;
+	float x, y;
+	const float f = 1.5F;
+
+	x = number * 0.5F;
+	y = number;
+	i = *(long *)&y;
+	i = 0x5f3759df - (i >> 1);
+	y = *(float *)&i;
+	y = y * (f - (x * y * y));
+	y = y * (f - (x * y * y));
+	return number * y;
+}
+
+float QuakeLength(const glm::vec2& v);
 
 // Window
 const sf::Vector2i WindowResolution = sf::Vector2i(1920, 1080);
@@ -55,8 +80,8 @@ const float FIXED_DELTA			= 1.0f / 30.0f;
 const int MAX_FRAMESKIP			= 1;
 const int SPEEDMULTIPLIER		= 2;
 
-const int PARTICLE_WIDTH_COUNT		= 30;
-const int PARTICLE_HEIGHT_COUNT		= 30;
+const int PARTICLE_WIDTH_COUNT		= 50;
+const int PARTICLE_HEIGHT_COUNT		= 50;
 const int PARTICLE_COUNT			= PARTICLE_WIDTH_COUNT * PARTICLE_HEIGHT_COUNT;
 const float PARTICLE_RADIUS			= 4.0f;
 const float PARTICLE_RADIUS_TWO		= PARTICLE_RADIUS + PARTICLE_RADIUS;
@@ -69,10 +94,11 @@ const float CONTAINER_WIDTH		= WindowResolution.x - 2.0f * HorizontalOffset;
 const float CONTAINER_HEIGHT	= WindowResolution.y - (VerticalOffsetTop + VerticalOffsetBottom);
 
 // Spatial partitioning
-const float CELL_SIZE	= 4.0f * PARTICLE_RADIUS;
-const float CELL_COLS	= std::trunc(CONTAINER_WIDTH / CELL_SIZE);
-const float CELL_ROWS	= std::trunc(CONTAINER_HEIGHT / CELL_SIZE);
-const float TOTAL_CELLS = CELL_COLS * CELL_ROWS;
+const float CELL_SIZE			= 4.0f * PARTICLE_RADIUS;
+const float INVERSE_CELL_SIZE	= 1.0f / CELL_SIZE;
+const float CELL_COLS			= std::trunc(CONTAINER_WIDTH / CELL_SIZE);
+const float CELL_ROWS			= std::trunc(CONTAINER_HEIGHT / CELL_SIZE);
+const float TOTAL_CELLS			= CELL_COLS * CELL_ROWS;
 
 // Fluid limits
 const float WALL_LEFTLIMIT			= HorizontalOffset;

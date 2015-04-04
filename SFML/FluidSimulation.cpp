@@ -26,9 +26,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			
 			FindNeighborParticles();
 
-#ifdef MULTITHREADING
-			m_ThreadPool->wait();
-#endif // MULTITHREADING
+			// ------------------------------------------------------------------------
 
 			// For the current particle get the lists of neighbors
 			for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
@@ -38,13 +36,38 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 
 			// ------------------------------------------------------------------------
 
+			// Particle constraint
+#ifdef MULTITHREADING
+
+			for (unsigned int i = 0; i < LambdaTaskList.size(); i++)
+			{
+				m_ThreadPool->schedule(ParticleConstratinTaskList[i]);
+			}
+
+			m_ThreadPool->wait();
+
+#else
+
 			// For all particles calculate density constraint
 			for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
 			{
 				ComputeParticleConstraint(m_ParticleList[iParticleIndex]);
 			}
 
+#endif // MULTITHREADING
+			
 			// ------------------------------------------------------------------------
+
+			// Lambda
+#ifdef MULTITHREADING
+
+			for (unsigned int i = 0; i < LambdaTaskList.size(); i++)
+			{
+				m_ThreadPool->schedule(LambdaTaskList[i]);
+			}
+
+			m_ThreadPool->wait();
+#else
 
 			// For all particles calculate lambda
 			for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
@@ -52,13 +75,31 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 				ComputeLambda(m_ParticleList[iParticleIndex]);
 			}
 
+#endif // MULTITHREADING
+
+			
+
 			// ------------------------------------------------------------------------
+
+			// Position correction
+#ifdef MULTITHREADING
+
+			for (unsigned int i = 0; i < PositionCorrectionTaskList.size(); i++)
+			{
+				m_ThreadPool->schedule(PositionCorrectionTaskList[i]);
+			}
+
+			m_ThreadPool->wait();
+#else
 
 			// For all particles calculate the position correction - dp
 			for (unsigned int iParticleIndex = 0; iParticleIndex < PARTICLE_COUNT; iParticleIndex++)
 			{
 				ComputePositionCorrection(m_ParticleList[iParticleIndex]);
 			}
+
+#endif // MULTITHREADING
+			
 
 			// ------------------------------------------------------------------------
 
@@ -144,30 +185,7 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 
 	if (!PBD_COLLISION)
 	{
-		// Collision detection against the container 
-		for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
-		{
-			FluidParticle* pCurrentParticle = *it;
-
-			// Wall collision response
-			glm::vec2 currentVelocity = pCurrentParticle->Velocity;
-			
-			if (pCurrentParticle->PredictedPosition.x < PARTICLE_LEFTLIMIT || pCurrentParticle->PredictedPosition.x > PARTICLE_RIGHTLIMIT)
-			{
-				pCurrentParticle->Velocity = glm::vec2(-currentVelocity.x, currentVelocity.y);
-			}
-
-			if (pCurrentParticle->PredictedPosition.y < PARTICLE_TOPLIMIT || pCurrentParticle->PredictedPosition.y > PARTICLE_BOTTOMLIMIT)
-			{
-				pCurrentParticle->Velocity = glm::vec2(currentVelocity.x, -currentVelocity.y);
-			}
-
-			// Clamp position inside the container
-			glm::vec2 currentPosition = pCurrentParticle->Position;
-			currentPosition.x = glm::clamp(currentPosition.x, PARTICLE_LEFTLIMIT + 1.0f, PARTICLE_RIGHTLIMIT - 1.0f);
-			currentPosition.y = glm::clamp(currentPosition.y, PARTICLE_TOPLIMIT + 1.0f, PARTICLE_BOTTOMLIMIT - 1.0f);
-			pCurrentParticle->Position = currentPosition;
-		}
+		ContainerCollisionUpdate();
 	}
 	
 	// Clear the constraint list
@@ -249,8 +267,6 @@ void FluidSimulation::BuildParticleSystem(const glm::vec2& startPosition,
 	// Create a list of tasks
 	for (unsigned int iThreadIndex = 0; iThreadIndex < iThreadCount; iThreadIndex++)
 	{
-		// Repopulate the spatial manager with the fluid particles
-
 		// Calculate the start and end index to process for the current thread
 		int iStep = m_ParticleList.size() / iThreadCount;
 
@@ -262,8 +278,18 @@ void FluidSimulation::BuildParticleSystem(const glm::vec2& startPosition,
 			iEndIndex = m_ParticleList.size();
 		}
 
-		// Initialize task
-		taskList.push_back(boost::bind(&FluidSimulation::RegisterFluidObject,
+		// Initialize task list for lambda calculation
+		LambdaTaskList.push_back(boost::bind(&FluidSimulation::ComputeLambdaMultithread,
+			this,
+			iStartIndex,
+			iEndIndex));
+
+		PositionCorrectionTaskList.push_back(boost::bind(&FluidSimulation::PositionCorrectionMultithread,
+			this,
+			iStartIndex,
+			iEndIndex));
+
+		ParticleConstratinTaskList.push_back(boost::bind(&FluidSimulation::ComputeParticleConstraintMultithread,
 			this,
 			iStartIndex,
 			iEndIndex));
@@ -425,16 +451,6 @@ void FluidSimulation::GenerateCollisionConstraints(sf::RenderWindow& window)
 
 void FluidSimulation::FindNeighborParticles()
 {
-
-#ifdef MULTITHREADING
-
-	for (unsigned int i = 0; i < taskList.size(); i++)
-	{
-		m_ThreadPool->schedule(taskList[i]);
-	}
-
-#else
-
 	for (unsigned int index = 0; index < m_ParticleList.size(); index++)
 	{
 		// Repopulate the spatial manager with the particles
@@ -446,9 +462,6 @@ void FluidSimulation::FindNeighborParticles()
 		// Repopulate the spatial manager with the particles
 		SpatialPartition::GetInstance().RegisterObject((BaseParticle*)m_ParticleManager->GetDeformableParticle(index));
 	}
-
-#endif // MULTITHREADING
-
 }
 
 // ------------------------------------------------------------------------
@@ -618,31 +631,70 @@ float FluidSimulation::ComputeArtificialPressureTerm(const FluidParticle* p1, co
 	return (-0.1f) * pow(fKernelValue * INVERSE_ARTIFICIAL_PRESSURE, 4.0f);
 }
 
+// ------------------------------------------------------------------------
+
+void FluidSimulation::ContainerCollisionUpdate()
+{
+	// Collision detection against the container 
+	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
+	{
+		FluidParticle* pCurrentParticle = *it;
+
+		// Wall collision response
+		glm::vec2 currentVelocity = pCurrentParticle->Velocity;
+
+		if (pCurrentParticle->PredictedPosition.x < PARTICLE_LEFTLIMIT || pCurrentParticle->PredictedPosition.x > PARTICLE_RIGHTLIMIT)
+		{
+			pCurrentParticle->Velocity = glm::vec2(-currentVelocity.x, currentVelocity.y);
+		}
+
+		if (pCurrentParticle->PredictedPosition.y < PARTICLE_TOPLIMIT || pCurrentParticle->PredictedPosition.y > PARTICLE_BOTTOMLIMIT)
+		{
+			pCurrentParticle->Velocity = glm::vec2(currentVelocity.x, -currentVelocity.y);
+		}
+
+		// Clamp position inside the container
+		glm::vec2 currentPosition = pCurrentParticle->Position;
+		currentPosition.x = glm::clamp(currentPosition.x, PARTICLE_LEFTLIMIT + 1.0f, PARTICLE_RIGHTLIMIT - 1.0f);
+		currentPosition.y = glm::clamp(currentPosition.y, PARTICLE_TOPLIMIT + 1.0f, PARTICLE_BOTTOMLIMIT - 1.0f);
+		pCurrentParticle->Position = currentPosition;
+	}
+}
+
+// ------------------------------------------------------------------------
+
 
 // ------------------------------------------------------------------------
 // Multithreading helper methods ------------------------------------------
 // ------------------------------------------------------------------------
 
-void FluidSimulation::RegisterFluidObject(int iStartIndex, int iEndIndex)
+#ifdef MULTITHREADING
+
+void FluidSimulation::ComputeLambdaMultithread(int iStartIndex, int iEndIndex)
 {
-	// Do the actual update
 	for (int i = iStartIndex; i < iEndIndex; i++)
 	{
-		// Repopulate the spatial manager with the particles
-		SpatialPartition::GetInstance().RegisterObject(m_ParticleList[i]);
+		ComputeLambda(m_ParticleList[i]);
 	}
-
-	return;
 }
 
-void FluidSimulation::RegisterDeformableObject(int iStartIndex, int iEndIndex)
+void FluidSimulation::PositionCorrectionMultithread(int iStartIndex, int iEndIndex)
 {
-	// Do the actual update
 	for (int i = iStartIndex; i < iEndIndex; i++)
 	{
-		// Repopulate the spatial manager with the particles
-		SpatialPartition::GetInstance().RegisterObject((BaseParticle*)m_ParticleManager->GetDeformableParticle(i));
+		ComputePositionCorrection(m_ParticleList[i]);
 	}
 }
+
+void FluidSimulation::ComputeParticleConstraintMultithread(int iStartIndex, int iEndIndex)
+{
+	for (int i = iStartIndex; i < iEndIndex; i++)
+	{
+		ComputeParticleConstraint(m_ParticleList[i]);
+	}
+}
+
+#endif // MULTITHREADING
+
 
 // ------------------------------------------------------------------------
