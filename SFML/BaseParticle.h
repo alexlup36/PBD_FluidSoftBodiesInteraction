@@ -44,12 +44,31 @@ public:
 	inline void SetNeighborColor() { m_Shape.setFillColor(m_NeighborColor); }
 	inline void SetCollisionColor() { m_Shape.setFillColor(m_CollisionColor); }
 
-	inline bool IsColliding(const BaseParticle& other)
+	inline bool IsCollidingStatic(const BaseParticle& other)
 	{
 		float fDx = PredictedPosition.x - other.PredictedPosition.x;
 		float fDy = PredictedPosition.y - other.PredictedPosition.y;
 
 		return PARTICLE_RADIUS2 > (fDx * fDx) + (fDy * fDy);
+	}
+
+	inline bool IsCollidingDynamic(const BaseParticle& other)
+	{
+		glm::vec2 d = ClosestPointToPointOnLine(Position, Position + Velocity, other.Position);
+
+		float fDx = d.x - other.Position.x;
+		float fDy = d.y - other.Position.y;
+
+		float fSqrDistance = fDx * fDx + fDy * fDy;
+
+		if (fSqrDistance < PARTICLE_RADIUS2)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	inline float DistanceToLine(const glm::vec2& p1, const glm::vec2& p2)
@@ -63,6 +82,39 @@ public:
 		{
 			return 0.0f;
 		}
+	}
+
+	inline glm::vec2 ClosestPointToPointOnLine(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& point)
+	{
+		// Intersection point
+		glm::vec2 c = glm::vec2(0.0f);
+
+		// Find the equation of the line
+		float fA1 = p2.y - p1.y;
+		float fB1 = p1.x - p2.x;
+		float fC1 = p1.x * p2.y - p2.x * p1.y;
+
+		// Find the equation of the perpendicular which goes through the current point
+		float fA2 = fA1;
+		float fB2 = -fB1;
+		float fC2 = fB2 * point.x + fA2 * point.y;
+
+		// Calculate the determinant of the system for the 2 equations
+		float fDet = fA1 * fA1 + fB1 * fB1;
+
+		if (fDet == 0.0f)
+		{
+			// If the determinant is 0.0 the closest point on the line is the point itself
+			c = Position;
+		}
+		else
+		{
+			// Cramer rule to solve the system
+			c.x = (fA1 * fC1 - fB1 * fC2) / fDet;
+			c.y = (fA1 * fC2 + fB1 * fC1) / fDet;
+		}
+
+		return c;
 	}
 		
 
@@ -87,6 +139,9 @@ public:
 	glm::vec2 PredictedPosition;
 	glm::vec2 PositionCorrection;
 	glm::vec2 Velocity;
+
+	float SignedDistance;
+	glm::vec2 GradientSignedDistance;
 
 protected:
 

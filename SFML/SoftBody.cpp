@@ -75,7 +75,7 @@ void SoftBody::Update(float dt)
 				//	FluidParticle* pOtherParticle = ParticleManager::GetInstance().GetFluidParticle(iFluidParticleIndex);
 
 				//	// Check if there is a collision between particles
-				//	if (pSoftParticle1->IsColliding(*pOtherParticle))
+				//	if (pSoftParticle1->IsCollidingDynamic(*pOtherParticle))
 				//	{
 				//		pSoftParticle1->CalculateMinimumTranslationDistance();
 				//		pOtherParticle->CalculateMinimumTranslationDistance();
@@ -126,7 +126,7 @@ void SoftBody::Update(float dt)
 						if (pSoftParticle1->GetParentIndex() != pOtherParticle->GetParentIndex())
 						{
 							// Check if there is a collision between particles
-							if (pSoftParticle1->IsColliding(*pOtherParticle))
+							if (pSoftParticle1->IsCollidingDynamic(*pOtherParticle))
 							{
 								pSoftParticle1->CalculateMinimumTranslationDistance();
 								pOtherParticle->CalculateMinimumTranslationDistance();

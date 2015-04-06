@@ -3,6 +3,7 @@
 
 #include "BaseParticle.h"
 #include "ParticleManager.h"
+#include "DeformableParticle.h"
 
 class FluidSimulation;
 
@@ -33,6 +34,8 @@ public:
 		ParticleType = ParticleType::FluidParticle;
 	}
 
+	float CalculateMinimumTranslationDistance();
+
 	// ------------------------------------------------------------------------
 	// Public members
 	// ------------------------------------------------------------------------
@@ -43,6 +46,9 @@ public:
 
 private:
 	static int FluidParticleGlobalIndex;
+
+	Edge m_ClosestEdge;
+	glm::vec2 m_vIntersectionPoint;
 };
 
 #endif // FLUIDPARTICLE_H

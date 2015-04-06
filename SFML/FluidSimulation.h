@@ -69,6 +69,7 @@ private:
 	std::vector<Task> LambdaTaskList;
 	std::vector<Task> PositionCorrectionTaskList;
 	std::vector<Task> ParticleConstratinTaskList;
+	std::vector<Task> MinTransDistanceTaskList;
 
 #endif // MULTITHREADING
 
@@ -135,29 +136,22 @@ private:
 	// ------------------------------------------------------------------------
 
 	void ComputeParticleConstraint(FluidParticle* particle);
-	void ComputeParticleConstraintMultithread(int iStartIndex, int iEndIndex);
-
-	// ------------------------------------------------------------------------
-
 	glm::vec2 ComputeParticleGradientConstraint(FluidParticle* particle, FluidParticle* neighbor);
-
-	// ------------------------------------------------------------------------
-
 	void ComputeLambda(FluidParticle* particle);
-	void ComputeLambdaMultithread(int iStartIndex, int iEndIndex);
-
-	// ------------------------------------------------------------------------
-
 	void ComputePositionCorrection(FluidParticle* particle);
-	void PositionCorrectionMultithread(int iStartIndex, int iEndIndex);
-
-	// ------------------------------------------------------------------------
-
 	float ComputeArtificialPressureTerm(const FluidParticle* p1, const FluidParticle* p2);
+	void ContainerCollisionUpdate();
 
 	// ------------------------------------------------------------------------
 
-	void ContainerCollisionUpdate();
+#ifdef MULTITHREADING
+
+	void ComputeParticleConstraintMultithread(int iStartIndex, int iEndIndex);
+	void ComputeLambdaMultithread(int iStartIndex, int iEndIndex);
+	void PositionCorrectionMultithread(int iStartIndex, int iEndIndex);
+	void ComputeMTDMultithread(int iStartIndex, int iEndIndex);
+
+#endif // MULTITHREADING
 
 	// ------------------------------------------------------------------------
 

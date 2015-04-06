@@ -76,9 +76,6 @@ public:
 	glm::vec2 OriginalPosition;
 	glm::vec2 GoalPosition;
 
-	float SignedDistance;
-	glm::vec2 GradientSignedDistance;
-
 private:
 	static int DeformableParticleGlobalIndex;
 
@@ -96,7 +93,7 @@ private:
 
 	sf::CircleShape m_GoalShape;
 
-	glm::vec2 intersectionPoint;
+	glm::vec2 m_vIntersectionPoint;
 
 	Edge m_ClosestEdge;
 };

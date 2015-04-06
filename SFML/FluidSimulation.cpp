@@ -97,17 +97,28 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 		}
 
 #endif // MULTITHREADING
-			
 
 		// ------------------------------------------------------------------------
 
-		// For all particles update the predicted position
-		for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
-		{
-			FluidParticle* pCurrentParticle = *it;
-
-			pCurrentParticle->PredictedPosition += pCurrentParticle->PositionCorrection;
-		}
+//		// Fluid particle MTD
+//#ifdef MULTITHREADING
+//
+//		for (unsigned int i = 0; i < MinTransDistanceTaskList.size(); i++)
+//		{
+//			m_ThreadPool->schedule(MinTransDistanceTaskList[i]);
+//		}
+//
+//		m_ThreadPool->wait();
+//
+//#else
+//
+//		// For all particles calculate density constraint
+//		for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+//		{
+//			m_ParticleList[iParticleIndex]->CalculateMinimumTranslationDistance();
+//		}
+//
+//#endif // MULTITHREADING
 
 		// ------------------------------------------------------------------------
 
@@ -132,23 +143,44 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 				iDeformableParticleIndex++)
 			{
 				// Get the current soft particle
-				BaseParticle* pCurrentSoftParticle = m_ParticleManager->GetParticle(deformableParticleNeighborList[iDeformableParticleIndex]);
+				DeformableParticle* pCurrentSoftParticle = (DeformableParticle*)m_ParticleManager->GetParticle(deformableParticleNeighborList[iDeformableParticleIndex]);
 
 				// Check if there is a collision between particles
-				if (pCurrentSoftParticle->IsColliding(*pCurrentFluidParticle))
+				if (pCurrentSoftParticle->IsCollidingDynamic(*pCurrentFluidParticle))
 				{
-					glm::vec2 p1p2 = pCurrentSoftParticle->Position - pCurrentFluidParticle->Position;
+					// Particle-particle collision - Handle basic collision
+					glm::vec2 p1p2 = pCurrentSoftParticle->PredictedPosition - pCurrentFluidParticle->PredictedPosition;
 					float fDistance = glm::length(p1p2);
 
-					glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+					glm::vec2 fDp1 = -0.5f * (fDistance - SMOOTHING_DISTANCE) * (p1p2) / fDistance;
 					glm::vec2 fDp2 = -fDp1;
 
-					// Position correction due to interaction with fluid particle
-					pCurrentSoftParticle->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
+					// Signed distance field used to keep the fluid particle from penetrating the soft body
+					if (pCurrentFluidParticle->SignedDistance < 0.0f)
+					{
+						// Get collision normal
+						glm::vec2 collisionNormal = -pCurrentFluidParticle->GradientSignedDistance;
 
-					pCurrentFluidParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
+						// Calculate position adjustment
+						fDp1 += 0.5f * pCurrentFluidParticle->SignedDistance * collisionNormal;
+						fDp2 -= 0.5f * pCurrentFluidParticle->SignedDistance * collisionNormal;
+					}
+
+					// Apply offset - Position correction due to interaction with fluid particle
+					pCurrentSoftParticle->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
+					pCurrentFluidParticle->PositionCorrection += fDp2 * PBDSTIFFNESS_ADJUSTED;
 				}
 			}
+		}
+
+		// ------------------------------------------------------------------------
+
+		// For all particles update the predicted position
+		for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
+		{
+			FluidParticle* pCurrentParticle = *it;
+
+			pCurrentParticle->PredictedPosition += pCurrentParticle->PositionCorrection;
 		}
 
 		// ------------------------------------------------------------------------
@@ -267,6 +299,7 @@ void FluidSimulation::SetupMultithread()
 	LambdaTaskList.clear();
 	PositionCorrectionTaskList.clear();
 	ParticleConstratinTaskList.clear();
+	MinTransDistanceTaskList.clear();
 
 	// Create a list of tasks
 	for (unsigned int iThreadIndex = 0; iThreadIndex < iThreadCount; iThreadIndex++)
@@ -294,6 +327,11 @@ void FluidSimulation::SetupMultithread()
 			iEndIndex));
 
 		ParticleConstratinTaskList.push_back(boost::bind(&FluidSimulation::ComputeParticleConstraintMultithread,
+			this,
+			iStartIndex,
+			iEndIndex));
+
+		MinTransDistanceTaskList.push_back(boost::bind(&FluidSimulation::ComputeMTDMultithread,
 			this,
 			iStartIndex,
 			iEndIndex));
@@ -533,7 +571,7 @@ void FluidSimulation::ComputeParticleConstraint(FluidParticle* particle)
 	// Calculate the particle density using the standard SPH density estimator
 	float fAccFluid = 0.0f;
 	float fAccSoft = 0.0f;
-	float fSampleDensityDifference = 200000.0f;
+	float fSampleDensityDifference = 1.0;
 
 	std::vector<int>& fluidNeighborList = particle->GetFluidNeighbors();
 	std::vector<int>& softNeighborList = particle->GetSoftNeighbors();
@@ -728,6 +766,14 @@ void FluidSimulation::ComputeParticleConstraintMultithread(int iStartIndex, int 
 	for (int i = iStartIndex; i < iEndIndex; i++)
 	{
 		ComputeParticleConstraint(m_ParticleList[i]);
+	}
+}
+
+void FluidSimulation::ComputeMTDMultithread(int iStartIndex, int iEndIndex)
+{
+	for (int i = iStartIndex; i < iEndIndex; i++)
+	{
+		m_ParticleList[i]->CalculateMinimumTranslationDistance();
 	}
 }
 

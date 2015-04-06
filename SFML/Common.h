@@ -71,7 +71,7 @@ inline float SquareRootFloat(float number) {
 
 // Window
 const sf::Vector2i WindowResolution = sf::Vector2i(1920, 1080);
-const float HorizontalOffset		= 100.0f;
+const float HorizontalOffset		= 500.0f;
 const float VerticalOffsetTop		= 150.0f;
 const float VerticalOffsetBottom	= 50.0f; 
 
