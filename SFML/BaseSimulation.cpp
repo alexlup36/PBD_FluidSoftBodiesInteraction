@@ -11,3 +11,8 @@ BaseSimulation::BaseSimulation()
 BaseSimulation::~BaseSimulation()
 {
 }
+
+void BaseSimulation::InputUpdate(float delta, int navigation)
+{
+
+}

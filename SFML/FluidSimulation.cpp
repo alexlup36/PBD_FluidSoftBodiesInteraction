@@ -100,25 +100,25 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 
 		// ------------------------------------------------------------------------
 
-//		// Fluid particle MTD
-//#ifdef MULTITHREADING
-//
-//		for (unsigned int i = 0; i < MinTransDistanceTaskList.size(); i++)
-//		{
-//			m_ThreadPool->schedule(MinTransDistanceTaskList[i]);
-//		}
-//
-//		m_ThreadPool->wait();
-//
-//#else
-//
-//		// For all particles calculate density constraint
-//		for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
-//		{
-//			m_ParticleList[iParticleIndex]->CalculateMinimumTranslationDistance();
-//		}
-//
-//#endif // MULTITHREADING
+		// Fluid particle MTD
+#ifdef MULTITHREADING
+
+		for (unsigned int i = 0; i < MinTransDistanceTaskList.size(); i++)
+		{
+			m_ThreadPool->schedule(MinTransDistanceTaskList[i]);
+		}
+
+		m_ThreadPool->wait();
+
+#else
+
+		// For all particles calculate density constraint
+		for (unsigned int iParticleIndex = 0; iParticleIndex < m_ParticleList.size(); iParticleIndex++)
+		{
+			m_ParticleList[iParticleIndex]->CalculateMinimumTranslationDistance();
+		}
+
+#endif // MULTITHREADING
 
 		// ------------------------------------------------------------------------
 
@@ -137,6 +137,23 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			unsigned int iDeformableParticleNeighborCount = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors().size();
 			std::vector<int>& deformableParticleNeighborList = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors();
 
+			glm::vec2 fDp1 = glm::vec2(0.0f);
+			glm::vec2 fDp2 = glm::vec2(0.0f);
+
+			// Signed distance field used to keep the fluid particle from penetrating the soft body
+			if (pCurrentFluidParticle->SignedDistance < -PARTICLE_RADIUS)
+			{
+				// Get collision normal
+				glm::vec2 collisionNormal = -pCurrentFluidParticle->GradientSignedDistance;
+
+				// Calculate position adjustment
+				//fDp1 += 0.5f * pCurrentFluidParticle->SignedDistance * collisionNormal;
+				fDp2 -= 10.0f * pCurrentFluidParticle->SignedDistance * collisionNormal;
+			}
+
+			// Apply offset - Position correction due to interaction with soft body
+			pCurrentFluidParticle->PositionCorrection += fDp2 * PBDSTIFFNESS_ADJUSTED;
+
 			// Go through all the deformable particles neighbors and check for collisions
 			for (unsigned iDeformableParticleIndex = 0; 
 				iDeformableParticleIndex < iDeformableParticleNeighborCount;
@@ -154,17 +171,6 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 
 					glm::vec2 fDp1 = -0.5f * (fDistance - SMOOTHING_DISTANCE) * (p1p2) / fDistance;
 					glm::vec2 fDp2 = -fDp1;
-
-					// Signed distance field used to keep the fluid particle from penetrating the soft body
-					if (pCurrentFluidParticle->SignedDistance < 0.0f)
-					{
-						// Get collision normal
-						glm::vec2 collisionNormal = -pCurrentFluidParticle->GradientSignedDistance;
-
-						// Calculate position adjustment
-						fDp1 += 0.5f * pCurrentFluidParticle->SignedDistance * collisionNormal;
-						fDp2 -= 0.5f * pCurrentFluidParticle->SignedDistance * collisionNormal;
-					}
 
 					// Apply offset - Position correction due to interaction with fluid particle
 					pCurrentSoftParticle->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
@@ -216,6 +222,12 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 	{
 		ContainerCollisionUpdate();
 	}
+
+	// Fluid stats update
+	std::string velocityDamping = GetPropertyString(Settings::VelocityDamping);
+	std::string viscosity = GetPropertyString(Settings::Viscosity);
+
+	m_FluidStats->SetString(velocityDamping + viscosity);
 	
 	// Clear the constraint list
 	m_ContainerConstraints.clear();
@@ -237,6 +249,37 @@ void FluidSimulation::Draw(sf::RenderWindow& window)
 	if (FLUIDRENDERING_MARCHINGSQUARES)
 	{
 		MarchingSquares::GetInstance().ProcessMarchingSquares(this, window);
+	}
+
+	// Fluid stats draw
+	m_FluidStats->Draw(window);
+}
+
+// ------------------------------------------------------------------------
+
+void FluidSimulation::InputUpdate(float delta, int navigation)
+{
+	if (delta == 0.0f)
+	{
+		m_iCurrentSetting = (m_iCurrentSetting + navigation) % m_Properties.size();
+	}
+	else
+	{
+		Settings currentSetting = m_Properties[m_iCurrentSetting];
+
+		switch (currentSetting)
+		{
+		case FluidSimulation::Settings::VelocityDamping:
+			m_fVelocityDamping += 0.001f * delta;
+			break;
+		case FluidSimulation::Settings::Viscosity:
+			m_fXSPHParam += delta;
+			break;
+		case FluidSimulation::Settings::Invalid:
+			break;
+		default:
+			break;
+		}
 	}
 }
 
@@ -399,7 +442,7 @@ void FluidSimulation::DampVelocities()
 	{
 		FluidParticle* pCurrentParticle = *it;
 
-		pCurrentParticle->Velocity = pCurrentParticle->Velocity * VELOCITY_DAMPING;
+		pCurrentParticle->Velocity = pCurrentParticle->Velocity * m_fVelocityDamping;
 	}
 }
 
@@ -561,7 +604,7 @@ void FluidSimulation::XSPH_Viscosity(FluidParticle* particle)
 	}
 
 	// Add the accumulated velocity to implement XSPH
-	particle->Velocity += XSPHParam * accumulatorVelocity;
+	particle->Velocity += m_fXSPHParam * accumulatorVelocity;
 }
 
 // ------------------------------------------------------------------------
@@ -682,7 +725,8 @@ void FluidSimulation::ComputePositionCorrection(FluidParticle* particle)
 		// lowers the neighborhood requirements of traditional SPH
 		if (ARTIFICIAL_PRESSURE_TERM)
 		{
-			acc += gradient * (particle->Lambda + pCurrentNeighborParticle->Lambda + ComputeArtificialPressureTerm(particle, pCurrentNeighborParticle));
+			float fArtifficialPressure = ComputeArtificialPressureTerm(particle, pCurrentNeighborParticle);
+			acc += gradient * (particle->Lambda + pCurrentNeighborParticle->Lambda + fArtifficialPressure);
 		}
 		else
 		{
@@ -691,7 +735,7 @@ void FluidSimulation::ComputePositionCorrection(FluidParticle* particle)
 	}
 
 	// Scale the acc by the inverse of the rest density
-	particle->PositionCorrection = acc * INVERSE_WATER_RESTDENSITY /* * particle.mass */;
+	particle->PositionCorrection = acc * INVERSE_WATER_RESTDENSITY * particle->Mass;
 }
 
 // ------------------------------------------------------------------------
@@ -733,6 +777,39 @@ void FluidSimulation::ContainerCollisionUpdate()
 		currentPosition.x = glm::clamp(currentPosition.x, PARTICLE_LEFTLIMIT + 1.0f, PARTICLE_RIGHTLIMIT - 1.0f);
 		currentPosition.y = glm::clamp(currentPosition.y, PARTICLE_TOPLIMIT + 1.0f, PARTICLE_BOTTOMLIMIT - 1.0f);
 		pCurrentParticle->Position = currentPosition;
+	}
+}
+
+// ------------------------------------------------------------------------
+
+std::string FluidSimulation::GetPropertyString(Settings property)
+{
+	switch (property)
+	{
+	case FluidSimulation::Settings::VelocityDamping:
+		if (m_iCurrentSetting == 0)
+		{
+			return "VELOCITY DAMPING: " + std::to_string(m_fVelocityDamping) + "\n";
+		}
+		else
+		{
+			return "Velocity damping: " + std::to_string(m_fVelocityDamping) + "\n";
+		}
+		break;
+	case FluidSimulation::Settings::Viscosity:
+		if (m_iCurrentSetting == 1)
+		{
+			return "VISCOSITY: " + std::to_string(m_fXSPHParam) + "\n";
+		}
+		else
+		{
+			return "Viscosity: " + std::to_string(m_fXSPHParam) + "\n";
+		}
+		break;
+	case FluidSimulation::Settings::Invalid:
+	default:
+		return std::string();
+		break;
 	}
 }
 

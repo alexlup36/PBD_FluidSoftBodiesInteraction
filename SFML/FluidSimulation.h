@@ -10,12 +10,15 @@
 #include "DeformableParticle.h"
 #include "SpatialPartition.h"
 #include "BaseSimulation.h"
+#include "Stats.h"
 
 // Multithreading
 #ifdef MULTITHREADING
 #include <boost/threadpool.hpp>
 #endif // MULTITHREADING
 
+// Forward declaration
+enum class Settings;
 
 class FluidSimulation : public BaseSimulation
 {
@@ -30,7 +33,7 @@ public:
 		glm::vec2 projectionPoint;
 	};
 
-	FluidSimulation() 
+	FluidSimulation(const sf::Font& font)
 	{
 		srand((unsigned int)time(NULL));
 
@@ -41,10 +44,26 @@ public:
 		SimType = SimulationType::FluidSimulation;
 
 		m_ThreadPool = nullptr;
+
+		m_FluidStats = new Stats(font, 1500.0f, 20.0f, 30, sf::Color::Red);
+		
+		m_Properties.push_back(Settings::VelocityDamping);
+		m_Properties.push_back(Settings::Viscosity);
 	};
+
+	~FluidSimulation()
+	{
+		if (m_FluidStats)
+		{
+			delete m_FluidStats;
+			m_FluidStats = nullptr;
+		}
+	}
 
 	void Update(sf::RenderWindow& window, float dt);
 	void Draw(sf::RenderWindow& window);
+
+	void InputUpdate(float delta, int navigation) override;
 
 	void BuildParticleSystem(const glm::vec2& startPosition, const sf::Color& color);
 #ifdef MULTITHREADING
@@ -73,9 +92,24 @@ private:
 
 #endif // MULTITHREADING
 
+	enum class Settings
+	{
+		VelocityDamping,
+		Viscosity,
+
+		Invalid,
+	};
+
+	unsigned int m_iCurrentSetting = 0;
+	std::vector<Settings> m_Properties;
+	std::string GetPropertyString(Settings property);
+
 	// -------------------------------------------------------------------------------
 	// Member variables --------------------------------------------------------------
 	// -------------------------------------------------------------------------------
+
+	float m_fVelocityDamping = 0.999f;
+	float m_fXSPHParam			= 1.0f;
 
 	// Constants
 	const bool XSPH_VISCOSITY = true;
@@ -90,10 +124,6 @@ private:
 	const int PARTICLE_WIDTH_NEW = 20;
 	const int PARTICLE_HEIGHT_NEW = 20;
 
-	const float VELOCITY_DAMPING = 0.999f;
-
-	const float XSPHParam = 0.05f;
-
 	// Constants used for SPH
 	const float SMOOTHING_DISTANCE = CELL_SIZE;
 	const float SMOOTHING_DISTANCE2 = CELL_SIZE * CELL_SIZE;
@@ -105,18 +135,20 @@ private:
 	const float SIXPOLY6COEFF = 6.0f * POLY6COEFF;
 	const float WATER_RESTDENSITY = 1000.0f;
 	const float INVERSE_WATER_RESTDENSITY = 1.0f / WATER_RESTDENSITY;
-	const float ARTIFICIAL_PRESSURE = POLY6COEFF * std::pow(SMOOTHING_DISTANCE2 - 0.1f * SMOOTHING_DISTANCE2, 3.0f);
+	const float ARTIFICIAL_PRESSURE = POLY6COEFF * std::pow(SMOOTHING_DISTANCE2 - 0.09f * SMOOTHING_DISTANCE2, 3.0f);
 	const float INVERSE_ARTIFICIAL_PRESSURE = 1.0f / ARTIFICIAL_PRESSURE;
 	const float SMOOTHING_DISTANCE6 = CELL_SIZE * CELL_SIZE * CELL_SIZE * CELL_SIZE * CELL_SIZE * CELL_SIZE;
 	const float SPIKYGRADCOEFF = 45.0f / PI / SMOOTHING_DISTANCE6;
 
 	// PBF constant
-	const float RELAXATION_PARAMETER = 0.0000075f;
+	const float RELAXATION_PARAMETER = 0.00001f;
 
 	// -------------------------------------------------------------------------------
 
 	std::vector<FluidParticle*> m_ParticleList;
 	std::vector<ContainerConstraint> m_ContainerConstraints;
+
+	Stats* m_FluidStats;
 
 	ParticleManager* m_ParticleManager;
 

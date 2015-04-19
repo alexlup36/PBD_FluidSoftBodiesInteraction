@@ -128,39 +128,50 @@ void SoftBody::Update(float dt)
 							// Check if there is a collision between particles
 							if (pSoftParticle1->IsCollidingDynamic(*pOtherParticle))
 							{
-								pSoftParticle1->CalculateMinimumTranslationDistance();
-								pOtherParticle->CalculateMinimumTranslationDistance();
+								// Particle-particle collision
+								glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
+								float fDistance = glm::length(p1p2);
 
-								if (pSoftParticle1->SignedDistance < 0.0f ||
-									pOtherParticle->SignedDistance < 0.0f)
-								{
-									// Particle-particle collision
-									glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
-									float fDistance = glm::length(p1p2);
+								glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+								glm::vec2 fDp2 = -fDp1;
 
-									glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-									glm::vec2 fDp2 = -fDp1;
+								// Apply offset
+								pSoftParticle1->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
+								pOtherParticle->PositionCorrection += fDp2 * PBDSTIFFNESS_ADJUSTED;
 
-									// Get collision normal
-									glm::vec2 collisionNormal;
-									if (pSoftParticle1->SignedDistance < pOtherParticle->SignedDistance)
-									{
-										collisionNormal = pSoftParticle1->GradientSignedDistance;
-									}
-									else
-									{
-										collisionNormal = -pOtherParticle->GradientSignedDistance;
-									}
-									float d = std::min(pSoftParticle1->SignedDistance, pOtherParticle->SignedDistance);
+								//pSoftParticle1->CalculateMinimumTranslationDistance();
+								//pOtherParticle->CalculateMinimumTranslationDistance();
 
-									// Calculate position adjustment
-									fDp1 -= 2.5f * d * collisionNormal;
-									fDp2 -= 2.5f * d * collisionNormal;
+								//if (pSoftParticle1->SignedDistance < 0.0f ||
+								//	pOtherParticle->SignedDistance < 0.0f)
+								//{
+								//	// Particle-particle collision
+								//	glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
+								//	float fDistance = glm::length(p1p2);
 
-									// Apply offset
-									pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
-									pOtherParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
-								}
+								//	glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+								//	glm::vec2 fDp2 = -fDp1;
+
+								//	// Get collision normal
+								//	glm::vec2 collisionNormal;
+								//	if (pSoftParticle1->SignedDistance < pOtherParticle->SignedDistance)
+								//	{
+								//		collisionNormal = pSoftParticle1->GradientSignedDistance;
+								//	}
+								//	else
+								//	{
+								//		collisionNormal = -pOtherParticle->GradientSignedDistance;
+								//	}
+								//	float d = std::min(pSoftParticle1->SignedDistance, pOtherParticle->SignedDistance);
+
+								//	// Calculate position adjustment
+								//	fDp1 -= 2.5f * d * collisionNormal;
+								//	fDp2 -= 2.5f * d * collisionNormal;
+
+								//	// Apply offset
+								//	pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
+								//	pOtherParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
+								//}
 							}
 						}
 					}

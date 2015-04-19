@@ -6,7 +6,7 @@
 #include "FluidSimulation.h"
 #include "SoftBody.h"
 #include "SimulationManager.h"
-
+#include "Stats.h"
 
 void DrawContainer(sf::RenderWindow& window)
 {
@@ -29,7 +29,7 @@ void DrawContainer(sf::RenderWindow& window)
 	window.draw(line, 8, sf::Lines);
 }
 
-void Draw(sf::RenderWindow& window, const sf::Text& stats)
+void Draw(sf::RenderWindow& window)
 {
 	if (FLUID_SIMULATION)
 	{
@@ -50,12 +50,23 @@ void Draw(sf::RenderWindow& window, const sf::Text& stats)
 			pSoftBody->Draw(window);
 		}
 	}
-
-	window.draw(stats);
 }
 
 int main()
 {
+	// --------------------------------------------------------------------------
+	// Benchmark
+	bool bBenchmarkMode = false;
+
+	unsigned int iMinFPS = std::numeric_limits<unsigned int>::max();
+	unsigned int iMaxFPS = std::numeric_limits<unsigned int>::min();
+	float fAverageFPS = 0.0f;
+	float fTotalFrames = 0.0f;
+	float fBenchmarkTimeAccumulator = 0.0f; // Seconds
+	float fBenchmarkLength = 30.0; // seconds
+
+	// --------------------------------------------------------------------------
+
 	// ---------------------------------------------------------------------------
 	// Window
 	bool IsFullScreen = false;
@@ -68,8 +79,11 @@ int main()
 	sf::Clock timer;
 	sf::Time currentTime = timer.getElapsedTime();
 	sf::Time newTime;
+	sf::Time intervalTime;
 	float fTimeAccumulator = 0.0f;
-	int iNextGameTick = (int)(SKIP_TICKS * 3.0f);
+	float fNextGameTick = FIXED_DELTA;
+	float fFrameTime = 0.0f;
+	unsigned int iFrameCount = 0;
 
 	// ---------------------------------------------------------------------------
 	// Mouse stats
@@ -84,11 +98,11 @@ int main()
 	{
 		std::cout << "Failed to load the font." << std::endl;
 	}
-	sf::Text stats;
-	stats.setFont(font);
-	stats.setColor(sf::Color::Red);
-	stats.setCharacterSize(30);
-	stats.setPosition(sf::Vector2f(20.0f, 20.0f));
+
+	Stats appStats(font,
+		20.0f, 20.0f,
+		30,
+		sf::Color::Red);
 
 	// ---------------------------------------------------------------------------
 	// Application - fluid implementation
@@ -97,7 +111,7 @@ int main()
 
 	if (FLUID_SIMULATION)
 	{
-		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>();
+		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>(font);
 		fluidSim->BuildParticleSystem(glm::vec2(100.0f, 150.0f), sf::Color::Blue);
 		fluidSim->SetupMultithread();
 		FluidSimulationList.push_back(fluidSim);
@@ -143,6 +157,71 @@ int main()
 				{
 					switch (event.key.code)
 					{
+						// --------------------------------------------------------------------------------
+
+						// Handle start/stop benchmark
+						case sf::Keyboard::B:
+						{
+							if (bBenchmarkMode)
+							{
+								// Stop benchmark mode - record data
+								bBenchmarkMode = false;
+
+								// Calculate average FPS 
+								fAverageFPS = fTotalFrames / fBenchmarkTimeAccumulator;
+
+								// Print benchmark results
+								std::cout << std::endl;
+								std::cout << "Benchmark results: " << std::endl;
+								std::cout << "Min FPS: " << iMinFPS << std::endl;
+								std::cout << "Max FPS: " << iMaxFPS << std::endl;
+								std::cout << "Average FPS: " << fAverageFPS << std::endl;
+								std::cout << "Total Frames: " << fTotalFrames << std::endl;
+							}
+							else
+							{
+								std::cout << std::endl;
+								std::cout << "Benchmark started..." << std::endl;
+
+								// Start benchmark mode
+								bBenchmarkMode = true;
+
+								// Reset info
+								iMinFPS = std::numeric_limits<unsigned int>::max();
+								iMaxFPS = std::numeric_limits<unsigned int>::min();
+								fAverageFPS = 0.0f;
+								fTotalFrames = 0.0f;
+								fBenchmarkTimeAccumulator = 0.0f;
+							}
+
+							break;
+						}
+
+
+						// --------------------------------------------------------------------------------
+
+						// Handle menu selection for fluid properties
+						case sf::Keyboard::Down:
+						{
+							// Fluid application update 	
+							for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
+							{
+								fluidSim->InputUpdate(0.0f, -1);
+							}
+							break;
+						}
+						case sf::Keyboard::Up:
+						{
+							// Fluid application update 	
+							for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
+							{
+								fluidSim->InputUpdate(0.0f, 1);
+							}
+							break;
+						}
+
+						// --------------------------------------------------------------------------------
+
 						// Switch between window and full screen
 						case sf::Keyboard::Return:
 						{
@@ -363,8 +442,12 @@ int main()
 				case sf::Event::MouseWheelMoved:
 				{
 					iWheelAccumulator += event.mouseWheel.delta;
-
-					std::cout << "Mouse wheel accumulator: " << iWheelAccumulator << std::endl;
+					
+					// Fluid application update 	
+					for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
+					{
+						fluidSim->InputUpdate(event.mouseWheel.delta, 0);
+					}
 				}
 
 				default:
@@ -394,9 +477,9 @@ int main()
 		
 		// Handle simulation time
 		newTime = timer.getElapsedTime();
-		sf::Time intervalTime = newTime - currentTime;
+		intervalTime = newTime - currentTime;
 		int loops = 0;
-		float fFrameTime = intervalTime.asSeconds();
+		fFrameTime = intervalTime.asSeconds();
 		if (fFrameTime > 0.25f)
 		{
 			fFrameTime = 0.25f;
@@ -404,10 +487,48 @@ int main()
 		currentTime = newTime;
 		fTimeAccumulator += fFrameTime;
 
+		// Update benchmark time
+		if (bBenchmarkMode)
+		{
+			fBenchmarkTimeAccumulator += fFrameTime;
+
+			// Benchmark ended - show results
+			if (fBenchmarkTimeAccumulator >= fBenchmarkLength)
+			{
+				// Stop benchmark mode - record data
+				bBenchmarkMode = false;
+
+				// Calculate average FPS 
+				fAverageFPS = fTotalFrames / fBenchmarkTimeAccumulator;
+
+				// Print benchmark results
+				std::cout << std::endl;
+				std::cout << "Benchmark results: " << std::endl;
+				std::cout << "Min FPS: " << iMinFPS << std::endl;
+				std::cout << "Max FPS: " << iMaxFPS << std::endl;
+				std::cout << "Average FPS: " << fAverageFPS << std::endl;
+				std::cout << "Total Frames: " << fTotalFrames << std::endl;
+			}
+		}
+
+		// Calculate FPS
+		unsigned int iFPS = (unsigned int)(1.0f / intervalTime.asSeconds());
+		iFrameCount = 0;
+
+		// Update benchmark data
+		if (iFPS > iMaxFPS)
+		{
+			iMaxFPS = iFPS;
+		}
+		if (iFPS < iMinFPS)
+		{
+			iMinFPS = iFPS;
+		}
+
 		// Get the total particle count
 		unsigned int iParticleCount = ParticleManager::GetInstance().GetParticles().size();
 
-		while (fTimeAccumulator > iNextGameTick && loops < MAX_FRAMESKIP) 
+		while (fTimeAccumulator > fNextGameTick && loops < MAX_FRAMESKIP)
 		{
 			for (int speedCounter = 0; speedCounter < SPEEDMULTIPLIER; speedCounter++)
 			{
@@ -429,17 +550,9 @@ int main()
 						pSoftBody->Update(FIXED_DELTA);
 					}
 				}
-				
-				std::string fps = "FPS: " + std::to_string(1.0f / intervalTime.asSeconds()) + "\n";
-				std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
-				std::string particleCount = "Particles: " + std::to_string(iParticleCount) + "\n";
-				std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
-				std::string gravityOn = "Gravity: " + gravityStatus + "\n";
-
-				stats.setString(milisecPerFrame + fps + particleCount + gravityOn);
 			}
 
-			iNextGameTick += (int)(SKIP_TICKS * 3);
+			fNextGameTick += FIXED_DELTA;
 			loops++;
 		}
 
@@ -447,7 +560,18 @@ int main()
 		DrawContainer(window);
 		
 		// Draw simulations
-		Draw(window, stats);
+		Draw(window);
+
+		fTotalFrames++;
+		std::string fps = "FPS: " + std::to_string(iFPS) + "\n";
+		std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
+		std::string particleCount = "Particles: " + std::to_string(iParticleCount) + "\n";
+		std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
+		std::string gravityOn = "Gravity: " + gravityStatus + "\n";
+
+		appStats.SetString(milisecPerFrame + fps + particleCount + gravityOn);
+
+		appStats.Draw(window);
 
 		// --------------------------------------------------------------------------
 		window.display();

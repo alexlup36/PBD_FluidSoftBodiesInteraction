@@ -34,6 +34,8 @@ public:
 		ParticleType = ParticleType::FluidParticle;
 	}
 
+	void Draw(sf::RenderWindow& window) override;
+
 	float CalculateMinimumTranslationDistance();
 
 	// ------------------------------------------------------------------------
@@ -46,6 +48,8 @@ public:
 
 private:
 	static int FluidParticleGlobalIndex;
+
+	glm::vec2 m_ClosesPoint;
 
 	Edge m_ClosestEdge;
 	glm::vec2 m_vIntersectionPoint;

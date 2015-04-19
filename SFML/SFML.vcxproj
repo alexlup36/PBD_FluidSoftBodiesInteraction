@@ -138,6 +138,7 @@
     <ClCompile Include="SimulationManager.cpp" />
     <ClCompile Include="SoftBody.cpp" />
     <ClCompile Include="SpatialPartition.cpp" />
+    <ClCompile Include="Stats.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseParticle.h" />
@@ -155,6 +156,7 @@
     <ClInclude Include="SimulationManager.h" />
     <ClInclude Include="SoftBody.h" />
     <ClInclude Include="SpatialPartition.h" />
+    <ClInclude Include="Stats.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

@@ -47,6 +47,13 @@ inline int Floor(float f)
 
 // ----------------------------------------------------------------------------
 
+inline bool IsBetween(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& x)
+{
+	return abs(glm::length(p1 - p2) - glm::length(x - p1) - glm::length(x - p2)) <= EPS;
+}
+
+// ----------------------------------------------------------------------------
+
 inline float SquareRootFloat(float number) {
 	long i;
 	float x, y;
@@ -75,17 +82,16 @@ const float HorizontalOffset		= 500.0f;
 const float VerticalOffsetTop		= 150.0f;
 const float VerticalOffsetBottom	= 50.0f; 
 
-// Simulation time
-const float TICKS_PER_SECOND	= 30.0f;
-const float SKIP_TICKS			= 1.0f / TICKS_PER_SECOND;
-const float FIXED_DELTA			= 1.0f / 30.0f;
+// Simulation time;
+const float TICKS_PER_SECOND	= 60.0f;
+const float FIXED_DELTA			= 1.0f / TICKS_PER_SECOND;
 const int MAX_FRAMESKIP			= 1;
-const int SPEEDMULTIPLIER		= 2;
+const int SPEEDMULTIPLIER		= 1;
 
 const float PARTICLE_RADIUS			= 3.0f;
 const float PARTICLE_RADIUS_TWO		= PARTICLE_RADIUS + PARTICLE_RADIUS;
 const float PARTICLE_RADIUS2		= PARTICLE_RADIUS_TWO * PARTICLE_RADIUS_TWO;
-const float PARTICLE_MASS			= 1.0f;
+const float PARTICLE_MASS			= 2.0f;
 const float PARTICLE_INVERSE_MASS	= 1.0f / PARTICLE_MASS;
 
 // Container dimensions

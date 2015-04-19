@@ -19,6 +19,8 @@ public:
 
 	inline const int GetSimulationIndex() const { return m_iSimulationIndex; }
 
+	virtual void InputUpdate(float delta, int navigation);
+
 	// ------------------------------------------------------------------------
 	// Public members
 	// ------------------------------------------------------------------------
