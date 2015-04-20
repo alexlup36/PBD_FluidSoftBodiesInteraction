@@ -13,6 +13,8 @@ class SoftBody : public BaseSimulation
 public:
 	SoftBody();
 
+	void BuildSoftBody();
+
 	void Update(float dt);
 	void Draw(sf::RenderWindow& window);
 	void SetReady(bool ready);
@@ -63,7 +65,7 @@ private:
 
 	// Constants
 	const float SOFTBODY_RESTITUTION_COEFF = 0.9f;
-	const float SOFTBODY_STIFFNESS_VALUE = 0.4f; // 0.01f - almost rigid 1.0f - 100.0f elastic
+	const float SOFTBODY_STIFFNESS_VALUE = 0.2f; // 0.01f - almost rigid 1.0f - 100.0f elastic
 
 	const float SOFTBODYPARTICLE_LEFTLIMIT = WALL_LEFTLIMIT + PARTICLE_RADIUS;
 	const float SOFTBODYPARTICLE_RIGHTLIMIT = WALL_RIGHTLIMIT - PARTICLE_RADIUS;

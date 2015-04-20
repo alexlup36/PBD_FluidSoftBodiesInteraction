@@ -385,6 +385,8 @@ void FluidSimulation::SetupMultithread()
 
 // ------------------------------------------------------------------------
 
+#ifdef MULTITHREADING
+
 void FluidSimulation::AddFluidParticles(const glm::vec2& position, const sf::Color& color)
 {
 	// Initialize the particle manager
@@ -416,6 +418,8 @@ void FluidSimulation::AddFluidParticles(const glm::vec2& position, const sf::Col
 		currentPosition.x = position.x;
 	}
 }
+
+#endif // MULTITHREADING
 
 // ------------------------------------------------------------------------
 

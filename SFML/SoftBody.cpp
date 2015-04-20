@@ -2,6 +2,7 @@
 #include "Mat2Utility.h"
 
 #include "SpatialPartition.h"
+#include "SimulationManager.h"
 
 #include <limits>
 
@@ -34,21 +35,12 @@ void SoftBody::Update(float dt)
 {
 	if (m_bReady)
 	{
-		// Graham scan
-		if (!m_bConvexHullInitialized && m_bDrawConvexHull)
-		{
-			m_bConvexHullInitialized = true;
-			m_ConvexHull.Initialize(m_InitialParticlesList);
-
-			m_iParticleListSize = m_ParticlesList.size();
-		}
-
 		if (m_bBezierCurve)
 		{
 			// Calculate the array of points which form the bezier curve
 			m_BezierCurve.CalculateMulticurveBezierPoints(m_BezierPoints);
 		}
-		
+
 		// Update external forces
 		UpdateForces(dt);
 
@@ -60,58 +52,30 @@ void SoftBody::Update(float dt)
 		while (iIteration++ < SOLVER_ITERATIONS)
 		{
 			unsigned int deformableListSize = ParticleManager::GetInstance().GetDeformableParticles().size();
-			//unsigned int fluidListSize = ParticleManager::GetInstance().GetFluidParticles().size();
-			
+
 			// Update all particles in the soft body
 			for (unsigned int iIndex = 0; iIndex < m_iParticleListSize; iIndex++)
 			{
 				// Get the current particle in the soft body instance
 				DeformableParticle* pSoftParticle1 = m_ParticlesList[iIndex];
 
-				//// Check the current deformable particle against all other fluid particles
-				//for (unsigned int iFluidParticleIndex = 0; iFluidParticleIndex < fluidListSize; iFluidParticleIndex++)
-				//{
-				//	// Get the instance of the other particle
-				//	FluidParticle* pOtherParticle = ParticleManager::GetInstance().GetFluidParticle(iFluidParticleIndex);
+				// -----------------------------------------------------------------------------------
+				// Push out
 
-				//	// Check if there is a collision between particles
-				//	if (pSoftParticle1->IsCollidingDynamic(*pOtherParticle))
-				//	{
-				//		pSoftParticle1->CalculateMinimumTranslationDistance();
-				//		pOtherParticle->CalculateMinimumTranslationDistance();
-
-				//		if (pSoftParticle1->SignedDistance < 0.0f ||
-				//			pOtherParticle->SignedDistance < 0.0f)
-				//		{
-				//			// Particle-particle collision
-				//			glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
-				//			float fDistance = glm::length(p1p2);
-
-				//			glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-				//			glm::vec2 fDp2 = -fDp1;
-
-				//			// Get collision normal
-				//			glm::vec2 collisionNormal;
-				//			if (pSoftParticle1->SignedDistance < pOtherParticle->SignedDistance)
-				//			{
-				//				collisionNormal = pSoftParticle1->GradientSignedDistance;
-				//			}
-				//			else
-				//			{
-				//				collisionNormal = -pOtherParticle->GradientSignedDistance;
-				//			}
-				//			float d = std::min(pSoftParticle1->SignedDistance, pOtherParticle->SignedDistance);
-
-				//			// Calculate position adjustment
-				//			fDp1 += 2.5f * d * collisionNormal;
-				//			fDp2 += 2.5f * d * collisionNormal;
-
-				//			// Apply offset
-				//			pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
-				//			pOtherParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
-				//		}
-				//	}
-				//}
+				pSoftParticle1->CalculateMinimumTranslationDistance();
+				// Signed distance field used to keep the deformable particle from penetrating the soft body
+				//if (pSoftParticle1->SignedDistance < -10.0f * PARTICLE_RADIUS)
+				{
+					glm::vec2 fOffset = glm::vec2(0.0f);
+					// Get collision normal
+					glm::vec2 collisionNormal = -pSoftParticle1->GradientSignedDistance;
+					// Calculate position adjustment
+					fOffset = 0.5f * pSoftParticle1->SignedDistance * collisionNormal;
+					// Apply offset - Position correction due to interaction with soft body
+					pSoftParticle1->PredictedPosition += fOffset * PBDSTIFFNESS_ADJUSTED;
+				}
+				
+				// -----------------------------------------------------------------------------------
 
 				// Check the current deformable particle against all other deformable particles
 				for (unsigned int iDeformableParticleIndex = 0; iDeformableParticleIndex < deformableListSize; iDeformableParticleIndex++)
@@ -120,58 +84,29 @@ void SoftBody::Update(float dt)
 					DeformableParticle* pOtherParticle = ParticleManager::GetInstance().GetDeformableParticle(iDeformableParticleIndex);
 
 					// Make sure it's not the same particle
-					if (pSoftParticle1->GlobalIndex != pOtherParticle->GlobalIndex)
+					//if (pSoftParticle1->GlobalIndex != pOtherParticle->GlobalIndex)
 					{
 						// Make sure it's not within the same simulation
 						if (pSoftParticle1->GetParentIndex() != pOtherParticle->GetParentIndex())
 						{
-							// Check if there is a collision between particles
-							if (pSoftParticle1->IsCollidingDynamic(*pOtherParticle))
+							if (pOtherParticle->GetParent()->IsReady())
 							{
-								// Particle-particle collision
-								glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
-								float fDistance = glm::length(p1p2);
+								// Check if there is a collision between particles
+								//if (pSoftParticle1->IsCollidingDynamicStatic(*pSoftParticle1, *pOtherParticle))
+								if (pSoftParticle1->IsCollidingStatic(*pOtherParticle))
+								//if (pSoftParticle1->IsCollidingDynamic(*pOtherParticle))
+								{
+									// Particle-particle collision
+									glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
+									float fDistance = glm::length(p1p2);
 
-								glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-								glm::vec2 fDp2 = -fDp1;
+									glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+									glm::vec2 fDp2 = -fDp1;
 
-								// Apply offset
-								pSoftParticle1->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTED;
-								pOtherParticle->PositionCorrection += fDp2 * PBDSTIFFNESS_ADJUSTED;
-
-								//pSoftParticle1->CalculateMinimumTranslationDistance();
-								//pOtherParticle->CalculateMinimumTranslationDistance();
-
-								//if (pSoftParticle1->SignedDistance < 0.0f ||
-								//	pOtherParticle->SignedDistance < 0.0f)
-								//{
-								//	// Particle-particle collision
-								//	glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
-								//	float fDistance = glm::length(p1p2);
-
-								//	glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-								//	glm::vec2 fDp2 = -fDp1;
-
-								//	// Get collision normal
-								//	glm::vec2 collisionNormal;
-								//	if (pSoftParticle1->SignedDistance < pOtherParticle->SignedDistance)
-								//	{
-								//		collisionNormal = pSoftParticle1->GradientSignedDistance;
-								//	}
-								//	else
-								//	{
-								//		collisionNormal = -pOtherParticle->GradientSignedDistance;
-								//	}
-								//	float d = std::min(pSoftParticle1->SignedDistance, pOtherParticle->SignedDistance);
-
-								//	// Calculate position adjustment
-								//	fDp1 -= 2.5f * d * collisionNormal;
-								//	fDp2 -= 2.5f * d * collisionNormal;
-
-								//	// Apply offset
-								//	pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
-								//	pOtherParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
-								//}
+									// Apply offset
+									pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
+									pOtherParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
+								}
 							}
 						}
 					}
@@ -181,8 +116,11 @@ void SoftBody::Update(float dt)
 
 		Integrate(dt);
 
-		// Update the position of the bezier points
-		m_BezierCurve.UpdateBezierPoints(m_ParticlesList);
+		if (m_bBezierCurve)
+		{
+			// Update the position of the bezier points
+			m_BezierCurve.UpdateBezierPoints(m_ParticlesList);
+		}
 	}
 }
 
@@ -481,4 +419,14 @@ void SoftBody::SetReady(bool ready)
 	//}
 
 	m_bReady = ready;
+}
+
+void SoftBody::BuildSoftBody()
+{
+	m_ConvexHull.Initialize(m_ParticlesList);
+	m_bConvexHullInitialized = true;
+
+	m_iParticleListSize = m_ParticlesList.size();
+
+	m_bReady = true;
 }

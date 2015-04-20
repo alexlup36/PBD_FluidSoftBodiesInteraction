@@ -20,7 +20,7 @@ public:
 
 	}
 
-	DeformableParticle(const glm::vec2& position, unsigned int iParentIndex)
+	DeformableParticle(const glm::vec2& position, const sf::Color& color, unsigned int iParentIndex)
 		: BaseParticle(position, iParentIndex)
 	{
 		// Particle type
@@ -28,7 +28,7 @@ public:
 
 		// Color
 		m_ControlledColor	= sf::Color::Red;
-		m_DefaultColor		= sf::Color::Yellow;
+		m_DefaultColor		= color;
 		SetDefaultColor();
 
 		// Position
@@ -56,6 +56,7 @@ public:
 	}
 
 	virtual void Update();
+	void Draw(sf::RenderWindow& window) override;
 	
 	void UpdateGoalShapePosition();
 	void DrawGoalShape(sf::RenderWindow& window);
@@ -93,8 +94,8 @@ private:
 
 	sf::CircleShape m_GoalShape;
 
+	glm::vec2 m_ClosesPoint;
 	glm::vec2 m_vIntersectionPoint;
-
 	Edge m_ClosestEdge;
 };
 

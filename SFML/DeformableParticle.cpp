@@ -49,12 +49,14 @@ float DeformableParticle::CalculateMinimumTranslationDistance()
 					m_ClosestEdge = edgeList[i];
 
 					bClosestEdgeFound = true;
+
+					m_ClosesPoint = ClosestPointToPointOnLine(m_ClosestEdge.Start->Position, m_ClosestEdge.End->Position, Position);
 				}
 			}
 		}
 	}
 
-	if (bClosestEdgeFound)
+	if (bClosestEdgeFound && IsBetween(m_ClosestEdge.Start->Position, m_ClosestEdge.End->Position, m_ClosesPoint))
 	{
 		// Signed distance
 		SignedDistance = fMinDistance;
@@ -86,4 +88,14 @@ void DeformableParticle::Update()
 {
 	// Call base update
 	BaseParticle::Update();
+}
+
+void DeformableParticle::Draw(sf::RenderWindow& window)
+{
+	BaseParticle::Draw(window);
+
+	if (SignedDistance < 0.0f && GlobalIndex == 10)
+	{
+		DrawLine(window, m_ClosesPoint, Position, sf::Color::Red);
+	}
 }

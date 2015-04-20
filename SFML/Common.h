@@ -71,6 +71,17 @@ inline float SquareRootFloat(float number) {
 
 // ----------------------------------------------------------------------------
 
+inline sf::Color GetRandomColor()
+{
+	unsigned int r = rand() % 255;
+	unsigned int g = rand() % 255;
+	unsigned int b = rand() % 255;
+
+	return sf::Color(r, g, b, 255);
+}
+
+// ----------------------------------------------------------------------------
+
 // ----------------------------------------------------------------------------
 // Constants ------------------------------------------------------------------
 // ----------------------------------------------------------------------------
@@ -125,7 +136,7 @@ const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS - 1.0f;
 
 const glm::vec2 GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
 const bool GRAVITY_ON			= true;
-const bool FLUID_SIMULATION		= true;
+const bool FLUID_SIMULATION		= false;
 const bool SOFTBODY_SIMULATION	= true;
 
 // Solver iterations

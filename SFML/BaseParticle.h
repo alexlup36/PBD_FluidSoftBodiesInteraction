@@ -44,15 +44,75 @@ public:
 	inline void SetNeighborColor() { m_Shape.setFillColor(m_NeighborColor); }
 	inline void SetCollisionColor() { m_Shape.setFillColor(m_CollisionColor); }
 
-	inline bool IsCollidingStatic(const BaseParticle& other)
-	{
-		float fDx = PredictedPosition.x - other.PredictedPosition.x;
-		float fDy = PredictedPosition.y - other.PredictedPosition.y;
+	inline void SetDefaultColor(const sf::Color& newColor) { m_DefaultColor = newColor; }
 
-		return PARTICLE_RADIUS2 > (fDx * fDx) + (fDy * fDy);
+	inline bool IsCollidingStatic(BaseParticle& other)
+	{
+		float fDx = Position.x - other.Position.x;
+		float fDy = Position.y - other.Position.y;
+
+		if (PARTICLE_RADIUS2 > (fDx * fDx) + (fDy * fDy))
+		{
+			/*SetCollisionColor();
+			other.SetCollisionColor();*/
+			return true;
+		}
+		else
+		{
+			/*SetDefaultColor();
+			other.SetDefaultColor();*/
+			return false;
+		}
 	}
 
-	inline bool IsCollidingDynamic(const BaseParticle& other)
+	inline bool IsCollidingDynamicStatic( BaseParticle& dynamicCircle,
+		BaseParticle& staticCircle)
+	{
+		glm::vec2 c1c2 = dynamicCircle.Position - staticCircle.Position;
+		glm::vec2 relVel = dynamicCircle.Velocity - staticCircle.Velocity;
+
+		float c = glm::dot(c1c2, c1c2) - PARTICLE_RADIUS2;
+		if (c < 0.0f)
+		{
+			/*dynamicCircle.SetDefaultColor();
+			staticCircle.SetDefaultColor();*/
+			return true;
+		}
+
+		float a = glm::dot(relVel, relVel);
+		if (a < EPS)
+		{
+			/*dynamicCircle.SetDefaultColor();
+			staticCircle.SetDefaultColor();*/
+			return false;
+		}
+
+		float b = glm::dot(relVel, c1c2);
+		if (b >= 0.0f)
+		{
+			/*dynamicCircle.SetDefaultColor();
+			staticCircle.SetDefaultColor();*/
+			return false;
+		}
+
+		float d = b * b - a * c;
+		if (d < 0.0f)
+		{
+			/*dynamicCircle.SetDefaultColor();
+			staticCircle.SetDefaultColor();*/
+			return false;
+		}
+
+		/*float t = (-b - sqrt(d)) / a;
+		dynamicCircle.Position += dynamicCircle.Velocity * t;
+		staticCircle.Position += staticCircle.Velocity * t;*/
+
+		/*dynamicCircle.SetCollisionColor();
+		staticCircle.SetCollisionColor();*/
+		return true;
+	}
+
+	inline bool IsCollidingDynamic(BaseParticle& other)
 	{
 		glm::vec2 d = ClosestPointToPointOnLine(Position, Position + Velocity, other.Position);
 
@@ -63,10 +123,14 @@ public:
 
 		if (fSqrDistance < PARTICLE_RADIUS2)
 		{
+			/*SetCollisionColor();
+			other.SetCollisionColor();*/
 			return true;
 		}
 		else
 		{
+			/*SetDefaultColor();
+			other.SetDefaultColor();*/
 			return false;
 		}
 	}

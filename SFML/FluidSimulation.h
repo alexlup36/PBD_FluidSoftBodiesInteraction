@@ -43,7 +43,9 @@ public:
 		// Set simulation type
 		SimType = SimulationType::FluidSimulation;
 
+#ifdef MULTITHREADING
 		m_ThreadPool = nullptr;
+#endif // MULTITHREADING
 
 		m_FluidStats = new Stats(font, 1500.0f, 20.0f, 30, sf::Color::Red);
 		

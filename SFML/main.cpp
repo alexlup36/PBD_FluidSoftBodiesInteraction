@@ -113,7 +113,11 @@ int main()
 	{
 		std::shared_ptr<FluidSimulation> fluidSim = std::make_shared<FluidSimulation>(font);
 		fluidSim->BuildParticleSystem(glm::vec2(100.0f, 150.0f), sf::Color::Blue);
+
+#ifdef MULTITHREADING
 		fluidSim->SetupMultithread();
+#endif // MULTITHREADING
+
 		FluidSimulationList.push_back(fluidSim);
 
 		// Add the simulation to the list of simulations
@@ -332,9 +336,11 @@ int main()
 							currentMousePosition.x = (int)glm::clamp((float)currentMousePosition.x, WALL_LEFTLIMIT, WALL_RIGHTLIMIT);
 							currentMousePosition.y = (int)glm::clamp((float)currentMousePosition.y, WALL_TOPLIMIT, WALL_BOTTOMLIMIT);
 
+#ifdef MULTITHREADING
 							FluidSimulation* fluidsList = SimulationManager::GetInstance().GetFluidSimulationList()[0];
 							fluidsList[0].AddFluidParticles(glm::vec2(currentMousePosition.x, currentMousePosition.y), sf::Color::Red);
 							fluidsList[0].SetupMultithread();
+#endif // MULTITHREADING
 
 							bFluidInput = false;
 						}
@@ -357,6 +363,8 @@ int main()
 								float startPosY = currentMousePosition.y - height * PARTICLE_RADIUS;
 								glm::vec2 currentPosition = glm::vec2(startPosX, startPosY);
 
+								sf::Color randomColor = GetRandomColor();
+
 								for (int i = 0; i < height; i++)
 								{
 									currentPosition.x = startPosX;
@@ -365,7 +373,7 @@ int main()
 									{
 										// Create a soft body particle
 										DeformableParticle* sbParticle = new DeformableParticle(glm::vec2(currentPosition.x,
-											currentPosition.y), softBodyInstance->GetSimulationIndex());
+											currentPosition.y), randomColor, softBodyInstance->GetSimulationIndex());
 
 										// Set parent reference
 										sbParticle->SetParentRef(softBodyInstance);
@@ -428,7 +436,7 @@ int main()
 						{
 							// End soft body input
 							bSoftBodyInput = false;
-							softBodyInstance->SetReady(true);
+							softBodyInstance->BuildSoftBody();
 
 							std::cout << "Soft body input ended. Soft body created." << std::endl;
 						}
