@@ -16,7 +16,8 @@ BaseParticle::BaseParticle(const glm::vec2& position, unsigned int parentIndex)
 	m_Shape.setOrigin(m_Shape.getLocalBounds().width / 2.0f, 
 	m_Shape.getLocalBounds().height / 2.0f);
 
-	Position			= glm::vec2(position.x, position.y);
+	Position			= position;
+	PredictedPosition	= position;
 	LocalPosition		= glm::vec2(Position.x - WALL_LEFTLIMIT, Position.y - WALL_TOPLIMIT);
 	PositionCorrection	= glm::vec2(0.0f);
 	Velocity			= glm::vec2(0.0f, 0.0f);

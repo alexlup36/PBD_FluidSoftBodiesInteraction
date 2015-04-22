@@ -76,6 +76,11 @@ public:
 
 	glm::vec2 GetRandomPosWithinLimits();
 	inline const std::vector<FluidParticle*>& GetFluidParticleList() { return m_ParticleList; }
+	
+#ifdef MULTITHREADING
+	inline const unsigned int GetThreadCount() { return m_iThreadCount; }
+#endif // MULTITHREADING
+	inline const unsigned int GetPaticleCount() { return m_ParticleList.size(); }
 
 private:
 
@@ -91,6 +96,8 @@ private:
 	std::vector<Task> PositionCorrectionTaskList;
 	std::vector<Task> ParticleConstratinTaskList;
 	std::vector<Task> MinTransDistanceTaskList;
+
+	unsigned int m_iThreadCount = 6;
 
 #endif // MULTITHREADING
 
@@ -110,7 +117,7 @@ private:
 	// Member variables --------------------------------------------------------------
 	// -------------------------------------------------------------------------------
 
-	float m_fVelocityDamping = 0.999f;
+	float m_fVelocityDamping	= 0.999f;
 	float m_fXSPHParam			= 1.0f;
 
 	// Constants
@@ -118,13 +125,13 @@ private:
 	const bool ARTIFICIAL_PRESSURE_TERM = true;
 	const bool FLUIDRENDERING_PARTICLE = true;
 	const bool FLUIDRENDERING_MARCHINGSQUARES = false;
-	const bool PBD_COLLISION = false;
+	const bool PBD_COLLISION = true;
 
-	const int PARTICLE_WIDTH_COUNT = 40;
-	const int PARTICLE_HEIGHT_COUNT = 40;
+	const int PARTICLE_WIDTH_COUNT		= 40;
+	const int PARTICLE_HEIGHT_COUNT		= 40;
 
-	const int PARTICLE_WIDTH_NEW = 20;
-	const int PARTICLE_HEIGHT_NEW = 20;
+	const int PARTICLE_WIDTH_NEW		= 20;
+	const int PARTICLE_HEIGHT_NEW		= 20;
 
 	// Constants used for SPH
 	const float SMOOTHING_DISTANCE = CELL_SIZE;
@@ -164,7 +171,7 @@ private:
 	void FindNeighborParticles();
 
 	void UpdateActualPosAndVelocities(float dt);
-	void GenerateCollisionConstraints(sf::RenderWindow& window);
+	void GenerateCollisionConstraints();
 	void XSPH_Viscosity(FluidParticle* particle);
 
 	// ------------------------------------------------------------------------

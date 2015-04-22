@@ -5,6 +5,11 @@ DeformableParticle* GrahamScan::m_Pivot = nullptr;
 
 void GrahamScan::Initialize(std::vector<DeformableParticle*>& deformableParticleList)
 {
+	while (!m_ConvexHull.empty())
+	{
+		m_ConvexHull.pop();
+	}
+
 	// Calculate the convex hull using the graham scan algorithm
 	std::sort(deformableParticleList.begin(), deformableParticleList.end(), SmallestY);
 
@@ -34,6 +39,7 @@ void GrahamScan::Initialize(std::vector<DeformableParticle*>& deformableParticle
 	std::stack<DeformableParticle*> tempStack = m_ConvexHull;
 	int iConvexHullSize = m_ConvexHull.size();
 	DeformableParticle* top = nullptr;
+	m_EdgeList.clear();
 
 	while (tempStack.size() > 0)
 	{

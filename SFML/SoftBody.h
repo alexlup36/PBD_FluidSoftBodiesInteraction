@@ -40,8 +40,6 @@ public:
 private:
 	bool m_bAllowFlipping;
 	bool m_bVolumeConservation;
-	bool m_bLinearMatch;
-	bool m_bQuadraticMatch;
 	bool m_bReady;
 	bool m_bDrawGoalPositions;
 
@@ -65,7 +63,7 @@ private:
 
 	// Constants
 	const float SOFTBODY_RESTITUTION_COEFF = 0.9f;
-	const float SOFTBODY_STIFFNESS_VALUE = 0.2f; // 0.01f - almost rigid 1.0f - 100.0f elastic
+	const float SOFTBODY_STIFFNESS_VALUE = 0.3f; // 0.0f - elastic 1.0f - solid
 
 	const float SOFTBODYPARTICLE_LEFTLIMIT = WALL_LEFTLIMIT + PARTICLE_RADIUS;
 	const float SOFTBODYPARTICLE_RIGHTLIMIT = WALL_RIGHTLIMIT - PARTICLE_RADIUS;

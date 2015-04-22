@@ -13,8 +13,6 @@ SoftBody::SoftBody()
 {
 	m_bAllowFlipping			= true;
 	m_bVolumeConservation		= false;
-	m_bLinearMatch				= true;
-	m_bQuadraticMatch			= false;
 
 	m_bConvexHullInitialized	= false;
 	m_bDrawConvexHull			= true;
@@ -64,11 +62,11 @@ void SoftBody::Update(float dt)
 
 				pSoftParticle1->CalculateMinimumTranslationDistance();
 				// Signed distance field used to keep the deformable particle from penetrating the soft body
-				//if (pSoftParticle1->SignedDistance < -10.0f * PARTICLE_RADIUS)
+				if (pSoftParticle1->SignedDistance > 0)
 				{
 					glm::vec2 fOffset = glm::vec2(0.0f);
 					// Get collision normal
-					glm::vec2 collisionNormal = -pSoftParticle1->GradientSignedDistance;
+					glm::vec2 collisionNormal = pSoftParticle1->GradientSignedDistance;
 					// Calculate position adjustment
 					fOffset = 0.5f * pSoftParticle1->SignedDistance * collisionNormal;
 					// Apply offset - Position correction due to interaction with soft body
@@ -83,30 +81,30 @@ void SoftBody::Update(float dt)
 					// Get the instance of the other particle
 					DeformableParticle* pOtherParticle = ParticleManager::GetInstance().GetDeformableParticle(iDeformableParticleIndex);
 
-					// Make sure it's not the same particle
-					//if (pSoftParticle1->GlobalIndex != pOtherParticle->GlobalIndex)
+					// Make sure it's not within the same simulation
+					if (pSoftParticle1->GetParentIndex() != pOtherParticle->GetParentIndex())
 					{
-						// Make sure it's not within the same simulation
-						if (pSoftParticle1->GetParentIndex() != pOtherParticle->GetParentIndex())
+						if (pOtherParticle->GetParent()->IsReady())
 						{
-							if (pOtherParticle->GetParent()->IsReady())
+							// Check if there is a collision between particles
+							if (pSoftParticle1->IsCollidingStatic(*pOtherParticle))
 							{
-								// Check if there is a collision between particles
-								//if (pSoftParticle1->IsCollidingDynamicStatic(*pSoftParticle1, *pOtherParticle))
-								if (pSoftParticle1->IsCollidingStatic(*pOtherParticle))
-								//if (pSoftParticle1->IsCollidingDynamic(*pOtherParticle))
+								// Particle-particle collision
+								glm::vec2 p1p2 = pSoftParticle1->Position - pOtherParticle->Position;
+								float fDistance = glm::length(p1p2);
+
+								glm::vec2 fDp1(0.0f);
+								glm::vec2 fDp2(0.0f);
+
+								if (fDistance != 0.0f)
 								{
-									// Particle-particle collision
-									glm::vec2 p1p2 = pSoftParticle1->PredictedPosition - pOtherParticle->PredictedPosition;
-									float fDistance = glm::length(p1p2);
-
-									glm::vec2 fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
-									glm::vec2 fDp2 = -fDp1;
-
-									// Apply offset
-									pSoftParticle1->PredictedPosition += fDp1 * PBDSTIFFNESS_ADJUSTED;
-									pOtherParticle->PredictedPosition += fDp2 * PBDSTIFFNESS_ADJUSTED;
+									fDp1 = -0.5f * (fDistance - PARTICLE_RADIUS_TWO) * (p1p2) / fDistance;
+									fDp2 = -fDp1;
 								}
+								
+								// Apply offset
+								pSoftParticle1->PositionCorrection += fDp1 * PBDSTIFFNESS_ADJUSTEDSB;
+								pOtherParticle->PositionCorrection += fDp2 * PBDSTIFFNESS_ADJUSTEDSB;
 							}
 						}
 					}
@@ -115,6 +113,12 @@ void SoftBody::Update(float dt)
 		}
 
 		Integrate(dt);
+
+		// Update the convex hull based on the deformations
+		if (m_bDrawConvexHull)
+		{
+			m_ConvexHull.Initialize(m_ParticlesList);
+		}
 
 		if (m_bBezierCurve)
 		{
@@ -201,23 +205,26 @@ void SoftBody::ShapeMatching(float dt)
 
 	glm::mat2 Aqq = glm::mat2(0.0f);
 	glm::mat2 Apq = glm::mat2(0.0f);
+
+	glm::vec2 p, q;
+
 	for (iIndex = 0; iIndex < m_ParticlesList.size(); iIndex++)
 	{
 		DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
 		float fMass = currentParticle.Mass;
 
-		glm::vec2 p = currentParticle.PredictedPosition - centerOfMass;
-		glm::vec2 q = currentParticle.OriginalPosition - centerOfMass0;
+		p = currentParticle.PredictedPosition - centerOfMass;
+		q = currentParticle.OriginalPosition - centerOfMass0;
 
 		// Apq
 		Apq[0][0] += fMass * p.x * q.x;
-		Apq[0][1] += fMass * p.x * q.y;
-		Apq[1][0] += fMass * p.y * q.x;
+		Apq[1][0] += fMass * p.x * q.y;
+		Apq[0][1] += fMass * p.y * q.x;
 		Apq[1][1] += fMass * p.y * q.y;
 		// Aqq
 		Aqq[0][0] += fMass * q.x * q.x;
-		Aqq[0][1] += fMass * q.x * q.y;
-		Aqq[1][0] += fMass * q.y * q.x;
+		Aqq[1][0] += fMass * q.x * q.y;
+		Aqq[0][1] += fMass * q.y * q.x;
 		Aqq[1][1] += fMass * q.y * q.y;
 	}
 
@@ -226,7 +233,7 @@ void SoftBody::ShapeMatching(float dt)
 
 	if (!m_bAllowFlipping && detApq < 0.0f)
 	{
-		Apq[0][1] = -Apq[0][1];
+		Apq[1][0] = -Apq[1][0];
 		Apq[1][1] = -Apq[1][1];
 	}
 
@@ -235,45 +242,37 @@ void SoftBody::ShapeMatching(float dt)
 	glm::mat2 S = glm::mat2(0.0f);
 	PolarDecomposition(Apq, R, S);
 
-	if (m_bLinearMatch)
+	glm::mat2 A = Aqq;
+	A = glm::inverse(A);
+	A = Apq * A;
+
+	if (m_bVolumeConservation)
 	{
-		glm::mat2 A = glm::mat2(0.0f);
-
-		float detAqq = glm::determinant(Aqq);
-		if (detAqq != 0.0f)
+		float detA = glm::determinant(A);
+		if (detA != 0.0f)
 		{
-			glm::mat2 AqqInverse = glm::inverse(Aqq);
-			A = Apq * AqqInverse;
+			detA = 1.0f / sqrt(fabs(detA));
+			if (detA > 2.0f) detA = 2.0f;
+			A *= detA;
 		}
+	}
 
-		if (m_bVolumeConservation)
+	glm::mat2 T = R * (1.0f - m_fBeta) + A * m_fBeta;
+
+	for (iIndex = 0; iIndex < m_ParticlesList.size(); iIndex++)
+	{
+		DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
+
+		if (currentParticle.IsFixedParticle()) continue;
+
+		currentParticle.GoalPosition = centerOfMass + T * (currentParticle.OriginalPosition - centerOfMass0);
+
+		m_fStiffness = dt / SOFTBODY_STIFFNESS_VALUE;
+		currentParticle.PredictedPosition += SOFTBODY_STIFFNESS_VALUE * (currentParticle.GoalPosition - currentParticle.PredictedPosition);
+
+		if (m_bDrawGoalPositions)
 		{
-			float detA = glm::determinant(A);
-			if (detA != 0.0f)
-			{
-				detA = 1.0f / sqrt(fabs(detA));
-				if (detA > 2.0f) detA = 2.0f;
-				A *= detA;
-			}
-		}
-
-		glm::mat2 T = R * (1.0f - m_fBeta) + A * m_fBeta;
-
-		for (iIndex = 0; iIndex < m_ParticlesList.size(); iIndex++)
-		{
-			DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
-
-			if (currentParticle.IsFixedParticle()) continue;
-
-			currentParticle.GoalPosition = centerOfMass + T * (currentParticle.OriginalPosition - centerOfMass0);
-
-			m_fStiffness = dt / SOFTBODY_STIFFNESS_VALUE;
-			currentParticle.PredictedPosition += SOFTBODY_STIFFNESS_VALUE * (currentParticle.GoalPosition - currentParticle.PredictedPosition);
-
-			if (m_bDrawGoalPositions)
-			{
-				currentParticle.UpdateGoalShapePosition();
-			}
+			currentParticle.UpdateGoalShapePosition();
 		}
 	}
 }
@@ -310,6 +309,11 @@ void SoftBody::UpdateCollision(float dt)
 	{
 		DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
 
+		if (currentParticle.IsFixedParticle())
+		{
+			continue;
+		}
+
 		if (currentParticle.PredictedPosition.x < SOFTBODYPARTICLE_LEFTLIMIT || currentParticle.PredictedPosition.x > SOFTBODYPARTICLE_RIGHTLIMIT)
 		{
 			currentParticle.PredictedPosition.x = currentParticle.Position.x - currentParticle.Velocity.x * dt * SOFTBODY_RESTITUTION_COEFF;
@@ -337,6 +341,11 @@ void SoftBody::UpdateForces(float dt)
 		for (iIndex = 0; iIndex < m_ParticlesList.size(); iIndex++)
 		{
 			DeformableParticle& currentParticle = *m_ParticlesList[iIndex];
+
+			if (currentParticle.IsFixedParticle())
+			{
+				continue;
+			}
 
 			// Add gravity
 			if (currentParticle.IsFixedParticle()) continue;
@@ -423,8 +432,11 @@ void SoftBody::SetReady(bool ready)
 
 void SoftBody::BuildSoftBody()
 {
-	m_ConvexHull.Initialize(m_ParticlesList);
-	m_bConvexHullInitialized = true;
+	if (m_bDrawConvexHull)
+	{
+		m_ConvexHull.Initialize(m_ParticlesList);
+		m_bConvexHullInitialized = true;
+	}
 
 	m_iParticleListSize = m_ParticlesList.size();
 

@@ -1,12 +1,14 @@
 #include <iostream>
 #include <memory>
 #include <limits>
+#include "SFML/Window/Event.hpp"
 
 #include "Common.h"
 #include "FluidSimulation.h"
 #include "SoftBody.h"
 #include "SimulationManager.h"
 #include "Stats.h"
+#include <fstream>
 
 void DrawContainer(sf::RenderWindow& window)
 {
@@ -58,20 +60,30 @@ int main()
 	// Benchmark
 	bool bBenchmarkMode = false;
 
+	unsigned int iFPS = 0;
 	unsigned int iMinFPS = std::numeric_limits<unsigned int>::max();
 	unsigned int iMaxFPS = std::numeric_limits<unsigned int>::min();
 	float fAverageFPS = 0.0f;
 	float fTotalFrames = 0.0f;
+	
+	float fMinTimePerFrame = std::numeric_limits<float>::max();
+	float fMaxTimePerFrame = std::numeric_limits<float>::min();
+	float fAverageTimePerFrame = 0.0f;
+
 	float fBenchmarkTimeAccumulator = 0.0f; // Seconds
 	float fBenchmarkLength = 30.0; // seconds
+
+	// Create file stream
+	std::ofstream outFile;
+	outFile.open("benchmarkFluid.txt", std::ios_base::app);
 
 	// --------------------------------------------------------------------------
 
 	// ---------------------------------------------------------------------------
 	// Window
 	bool IsFullScreen = false;
-	sf::RenderWindow window(sf::VideoMode(WindowResolution.x, WindowResolution.y), "SFML window");
-	window.setFramerateLimit(60);
+	sf::RenderWindow window(sf::VideoMode(WindowResolution.x, WindowResolution.y), "SFML window"/*, sf::Style::Fullscreen*/);
+	//window.setFramerateLimit(60);
 	sf::Color clearColor = sf::Color::Black;
 
 	// ---------------------------------------------------------------------------
@@ -122,12 +134,6 @@ int main()
 
 		// Add the simulation to the list of simulations
 		SimulationManager::GetInstance().AddSimulation(fluidSim.get());
-
-		/*std::shared_ptr<FluidSimulation> fluidSim2 = std::make_shared<FluidSimulation>();
-		fluidSim2->BuildParticleSystem(glm::vec2(600.0f, 150.0f), sf::Color::Green);
-		FluidSimulationList.push_back(fluidSim2);
-
-		SimulationManager::GetInstance().AddSimulation(fluidSim2.get());*/
 	}
 	
 	// ---------------------------------------------------------------------------
@@ -139,6 +145,61 @@ int main()
 	DeformableParticle* deformableControlledParticle = nullptr;
 	float fMinimumPickingDistance = 50.0f;
 	int iCurrentSBIndex = 0;
+
+	if (true)
+	{
+		int softBodyCount = 15;
+		int width = 6;
+		int height = 6;
+
+		float dt = 0.1f;
+
+		float fSeparatingOffset = (CONTAINER_WIDTH - (float)(width * softBodyCount)) / ((float)(softBodyCount + 1));
+		glm::vec2 startPosition = glm::vec2(WALL_LEFTLIMIT, 200.0f);
+
+		sf::Color randomColor = GetRandomColor();
+
+		for (int i = 0; i < softBodyCount; i++)
+		{
+			// Initialize the current soft-body instance
+			softBodyInstance = new SoftBody();
+
+			// Add the soft body instance to the list of soft bodies
+			SimulationManager::GetInstance().AddSimulation(softBodyInstance);
+
+			// Calculate starting position
+			startPosition.x += fSeparatingOffset;
+
+			float startPosX = startPosition.x - width * PARTICLE_RADIUS;
+			float startPosY = startPosition.y - height * PARTICLE_RADIUS;
+			glm::vec2 currentPosition = glm::vec2(startPosX, startPosY);
+
+			for (int i = 0; i < height; i++)
+			{
+				currentPosition.x = startPosX;
+
+				for (int j = 0; j < width; j++)
+				{
+					// Create a soft body particle
+					DeformableParticle* sbParticle = new DeformableParticle(glm::vec2(currentPosition.x,
+						currentPosition.y), randomColor, softBodyInstance->GetSimulationIndex());
+
+					// Set parent reference
+					sbParticle->SetParentRef(softBodyInstance);
+
+					// Add the newly created particle to the soft-body collection
+					softBodyInstance->AddSoftBodyParticle(*sbParticle);
+
+					// Update position
+					currentPosition.x += (PARTICLE_RADIUS * 2.0f) + dt;
+				}
+
+				currentPosition.y += (PARTICLE_RADIUS * 2.0f) + dt;
+			}
+
+			softBodyInstance->BuildSoftBody();
+		}
+	}
 	
 	// ---------------------------------------------------------------------------
 
@@ -173,6 +234,8 @@ int main()
 
 								// Calculate average FPS 
 								fAverageFPS = fTotalFrames / fBenchmarkTimeAccumulator;
+								// Calculate average ms per frame
+								fAverageTimePerFrame = fBenchmarkTimeAccumulator / fTotalFrames;
 
 								// Print benchmark results
 								std::cout << std::endl;
@@ -181,6 +244,12 @@ int main()
 								std::cout << "Max FPS: " << iMaxFPS << std::endl;
 								std::cout << "Average FPS: " << fAverageFPS << std::endl;
 								std::cout << "Total Frames: " << fTotalFrames << std::endl;
+
+								std::cout << "Min time per frame: " << fMinTimePerFrame << std::endl;
+								std::cout << "Max time per frame: " << fMaxTimePerFrame << std::endl;
+								std::cout << "Average time per frame: " << fAverageTimePerFrame << std::endl;
+
+								std::cout << "Soft body count: " << SoftBodiesList.size() << std::endl;
 							}
 							else
 							{
@@ -196,6 +265,10 @@ int main()
 								fAverageFPS = 0.0f;
 								fTotalFrames = 0.0f;
 								fBenchmarkTimeAccumulator = 0.0f;
+
+								fMinTimePerFrame = std::numeric_limits<float>::max();
+								fMaxTimePerFrame = std::numeric_limits<float>::min();
+								fAverageTimePerFrame = 0.0f;
 							}
 
 							break;
@@ -316,6 +389,7 @@ int main()
 								{
 									// Reset the color of the controlled particle
 									deformableControlledParticle->SetDefaultColor();
+									deformableControlledParticle->ReleaseParticle();
 									// Reset the pointer to the controlled particle
 									deformableControlledParticle = nullptr;
 								}
@@ -447,6 +521,17 @@ int main()
 					break;
 				}
 
+				case sf::Event::MouseMoved:
+				{
+					if (deformableControlledParticle != nullptr)
+					{
+						deformableControlledParticle->SetFixedParticle(glm::vec2(event.mouseMove.x,
+							event.mouseMove.y));
+					}
+
+					break;
+				}
+
 				case sf::Event::MouseWheelMoved:
 				{
 					iWheelAccumulator += event.mouseWheel.delta;
@@ -488,10 +573,10 @@ int main()
 		intervalTime = newTime - currentTime;
 		int loops = 0;
 		fFrameTime = intervalTime.asSeconds();
-		if (fFrameTime > 0.25f)
+		/*if (fFrameTime > 0.25f)
 		{
 			fFrameTime = 0.25f;
-		}
+		}*/
 		currentTime = newTime;
 		fTimeAccumulator += fFrameTime;
 
@@ -508,36 +593,38 @@ int main()
 
 				// Calculate average FPS 
 				fAverageFPS = fTotalFrames / fBenchmarkTimeAccumulator;
+				// Calculate average ms per frame
+				fAverageTimePerFrame = fBenchmarkTimeAccumulator / fTotalFrames;
 
 				// Print benchmark results
-				std::cout << std::endl;
-				std::cout << "Benchmark results: " << std::endl;
-				std::cout << "Min FPS: " << iMinFPS << std::endl;
-				std::cout << "Max FPS: " << iMaxFPS << std::endl;
-				std::cout << "Average FPS: " << fAverageFPS << std::endl;
-				std::cout << "Total Frames: " << fTotalFrames << std::endl;
+				outFile << "-------------------------------------------------------------------------" << std::endl;
+#ifdef MULTITHREADING
+				outFile << "Thread count: " << FluidSimulationList[0]->GetThreadCount() << std::endl;
+#else
+				outFile << "Single threaded." << std::endl;
+#endif // MULTITHREADING
+				outFile << "Particle count: " << FluidSimulationList[0]->GetPaticleCount() << std::endl;
+				outFile << "Min FPS: " << iMinFPS << std::endl;
+				outFile << "Max FPS: " << iMaxFPS << std::endl;
+				outFile << "Average FPS: " << fAverageFPS << std::endl;
+				outFile << "Total Frames: " << fTotalFrames << std::endl;
+
+				outFile << "Min time per frame: " << fMinTimePerFrame << std::endl;
+				outFile << "Max time per frame: " << fMaxTimePerFrame << std::endl;
+				outFile << "Average time per frame: " << fAverageTimePerFrame << std::endl;
+
+				outFile << "Soft body count: " << SoftBodiesList.size() << std::endl;
+
+				outFile.close();
+				window.close();
 			}
-		}
-
-		// Calculate FPS
-		unsigned int iFPS = (unsigned int)(1.0f / intervalTime.asSeconds());
-		iFrameCount = 0;
-
-		// Update benchmark data
-		if (iFPS > iMaxFPS)
-		{
-			iMaxFPS = iFPS;
-		}
-		if (iFPS < iMinFPS)
-		{
-			iMinFPS = iFPS;
 		}
 
 		// Get the total particle count
 		unsigned int iParticleCount = ParticleManager::GetInstance().GetParticles().size();
 
-		while (fTimeAccumulator > fNextGameTick && loops < MAX_FRAMESKIP)
-		{
+		/*while (fTimeAccumulator > fNextGameTick && loops < MAX_FRAMESKIP)
+		{*/
 			for (int speedCounter = 0; speedCounter < SPEEDMULTIPLIER; speedCounter++)
 			{
 				if (FLUID_SIMULATION)
@@ -562,7 +649,30 @@ int main()
 
 			fNextGameTick += FIXED_DELTA;
 			loops++;
+		//}
+
+		// Calculate FPS
+		iFPS = (unsigned int)(1.0f / intervalTime.asSeconds());
+		iFrameCount = 0;
+
+		// Update benchmark data
+		if (iFPS > iMaxFPS)
+		{
+			iMaxFPS = iFPS;
 		}
+		if (iFPS < iMinFPS)
+		{
+			iMinFPS = iFPS;
+		}
+		if (fFrameTime < fMinTimePerFrame)
+		{
+			fMinTimePerFrame = fFrameTime;
+		}
+		if (fFrameTime > fMaxTimePerFrame)
+		{
+			fMaxTimePerFrame = fFrameTime;
+		}
+		fTotalFrames++;
 
 		// Container draw
 		DrawContainer(window);
@@ -570,9 +680,8 @@ int main()
 		// Draw simulations
 		Draw(window);
 
-		fTotalFrames++;
 		std::string fps = "FPS: " + std::to_string(iFPS) + "\n";
-		std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(intervalTime.asSeconds()) + "\n";
+		std::string milisecPerFrame = "Milliseconds per frame: " + std::to_string(fFrameTime) + "\n";
 		std::string particleCount = "Particles: " + std::to_string(iParticleCount) + "\n";
 		std::string gravityStatus = GRAVITY_ON ? "Active" : "Inactive";
 		std::string gravityOn = "Gravity: " + gravityStatus + "\n";
@@ -584,6 +693,8 @@ int main()
 		// --------------------------------------------------------------------------
 		window.display();
 	}
+
+	outFile.close();
 
 	return 0;
 }

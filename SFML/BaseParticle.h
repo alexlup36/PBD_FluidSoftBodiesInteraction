@@ -140,7 +140,7 @@ public:
 		float p1p2Length = glm::length(p1 - p2);
 		if (p1p2Length != 0.0f)
 		{
-			return ((p2.y - p1.y) * Position.x - (p2.x - p1.x) * Position.y + p2.x * p1.y - p2.y * p1.x) / p1p2Length;
+			return abs((p2.y - p1.y) * Position.x - (p2.x - p1.x) * Position.y + p2.x * p1.y - p2.y * p1.x) / p1p2Length;
 		}
 		else
 		{
@@ -180,7 +180,6 @@ public:
 
 		return c;
 	}
-		
 
 	inline const unsigned int GetParentIndex() const { return m_iParentSimulationIndex; }
 

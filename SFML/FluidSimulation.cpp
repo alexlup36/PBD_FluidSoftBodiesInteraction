@@ -137,22 +137,22 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 			unsigned int iDeformableParticleNeighborCount = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors().size();
 			std::vector<int>& deformableParticleNeighborList = m_ParticleList[iFluidParticleIndex]->GetSoftNeighbors();
 
-			glm::vec2 fDp1 = glm::vec2(0.0f);
-			glm::vec2 fDp2 = glm::vec2(0.0f);
+			// -----------------------------------------------------------------------------------
+			// Push out
 
 			// Signed distance field used to keep the fluid particle from penetrating the soft body
-			if (pCurrentFluidParticle->SignedDistance < -PARTICLE_RADIUS)
+			if (pCurrentFluidParticle->SignedDistance > 0)
 			{
+				glm::vec2 fOffset = glm::vec2(0.0f);
 				// Get collision normal
-				glm::vec2 collisionNormal = -pCurrentFluidParticle->GradientSignedDistance;
-
+				glm::vec2 collisionNormal = pCurrentFluidParticle->GradientSignedDistance;
 				// Calculate position adjustment
-				//fDp1 += 0.5f * pCurrentFluidParticle->SignedDistance * collisionNormal;
-				fDp2 -= 10.0f * pCurrentFluidParticle->SignedDistance * collisionNormal;
+				fOffset = 0.5f * pCurrentFluidParticle->SignedDistance * collisionNormal;
+				// Apply offset - Position correction due to interaction with soft body
+				pCurrentFluidParticle->PositionCorrection += fOffset * PBDSTIFFNESS_ADJUSTED;
 			}
 
-			// Apply offset - Position correction due to interaction with soft body
-			pCurrentFluidParticle->PositionCorrection += fDp2 * PBDSTIFFNESS_ADJUSTED;
+			// -----------------------------------------------------------------------------------
 
 			// Go through all the deformable particles neighbors and check for collisions
 			for (unsigned iDeformableParticleIndex = 0; 
@@ -190,11 +190,11 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 		}
 
 		// ------------------------------------------------------------------------
-		
+
 		if (PBD_COLLISION)
 		{
 			// Generate external collision constraints
-			GenerateCollisionConstraints(window);
+			GenerateCollisionConstraints();
 
 			// Update container constraints Position based
 			for each (auto container_constraint in m_ContainerConstraints)
@@ -206,10 +206,22 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 
 				glm::vec2 gradientDescent = container_constraint.normalVector;
 				float gradienDescentLength = glm::length(gradientDescent);
-				glm::vec2 dp = -constraint / (gradienDescentLength * gradienDescentLength) * gradientDescent;
+
+				glm::vec2 dp;
+				if (gradienDescentLength < EPS)
+				{
+					dp = glm::vec2(0.0f);
+				}
+				else
+				{
+					dp = -constraint / (gradienDescentLength * gradienDescentLength) * gradientDescent;
+				}
 
 				m_ParticleList[container_constraint.particleIndex]->PredictedPosition += dp * container_constraint.stiffness_adjusted;
 			}
+
+			// Clear the constraint list
+			m_ContainerConstraints.clear();
 		}
 		
 		// ------------------------------------------------------------------------
@@ -228,9 +240,6 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 	std::string viscosity = GetPropertyString(Settings::Viscosity);
 
 	m_FluidStats->SetString(velocityDamping + viscosity);
-	
-	// Clear the constraint list
-	m_ContainerConstraints.clear();
 }
 
 // ------------------------------------------------------------------------
@@ -334,10 +343,9 @@ void FluidSimulation::BuildParticleSystem(const glm::vec2& startPosition,
 
 void FluidSimulation::SetupMultithread()
 {
-	unsigned int iThreadCount = 6;
 	if (m_ThreadPool == nullptr)
 	{
-		m_ThreadPool = std::make_unique<boost::threadpool::pool>(iThreadCount);
+		m_ThreadPool = std::make_unique<boost::threadpool::pool>(m_iThreadCount);
 	}
 	LambdaTaskList.clear();
 	PositionCorrectionTaskList.clear();
@@ -345,15 +353,15 @@ void FluidSimulation::SetupMultithread()
 	MinTransDistanceTaskList.clear();
 
 	// Create a list of tasks
-	for (unsigned int iThreadIndex = 0; iThreadIndex < iThreadCount; iThreadIndex++)
+	for (unsigned int iThreadIndex = 0; iThreadIndex < m_iThreadCount; iThreadIndex++)
 	{
 		// Calculate the start and end index to process for the current thread
-		int iStep = m_ParticleList.size() / iThreadCount;
+		int iStep = m_ParticleList.size() / m_iThreadCount;
 
 		int iStartIndex = iStep * iThreadIndex;
 		int iEndIndex = iStep * (iThreadIndex + 1);
 
-		if (iThreadIndex == iThreadCount - 1)
+		if (iThreadIndex == m_iThreadCount - 1)
 		{
 			iEndIndex = m_ParticleList.size();
 		}
@@ -498,71 +506,79 @@ void FluidSimulation::UpdateActualPosAndVelocities(float dt)
 
 // ------------------------------------------------------------------------
 
-void FluidSimulation::GenerateCollisionConstraints(sf::RenderWindow& window)
+void FluidSimulation::GenerateCollisionConstraints()
 {
 	for (auto it = m_ParticleList.begin(); it != m_ParticleList.end(); it++)
 	{
 		FluidParticle* currentParticle = *it;
 
+		float fIntersectionCoeff;
+		glm::vec2 intersectionPoint;
+
 		if (currentParticle->PredictedPosition.x < PARTICLE_LEFTLIMIT)
 		{
-			float fIntersectionCoeff = (PARTICLE_LEFTLIMIT - currentParticle->Position.x) / (currentParticle->PredictedPosition.x - currentParticle->Position.x);
-			glm::vec2 intersectionPoint = glm::vec2(PARTICLE_LEFTLIMIT,
-				currentParticle->Position.y + fIntersectionCoeff * (currentParticle->PredictedPosition.y - currentParticle->Position.y));
+			if (currentParticle->PredictedPosition.x - currentParticle->Position.x != 0.0f)
+			{
+				fIntersectionCoeff = (PARTICLE_LEFTLIMIT - currentParticle->Position.x) / (currentParticle->PredictedPosition.x - currentParticle->Position.x);
+				intersectionPoint = glm::vec2(PARTICLE_LEFTLIMIT, currentParticle->Position.y + fIntersectionCoeff * (currentParticle->PredictedPosition.y - currentParticle->Position.y));
 
-			ContainerConstraint cc;
-			cc.particleIndex = currentParticle->Index;
-			cc.normalVector = glm::vec2(1.0f, 0.0f);
-			cc.projectionPoint = intersectionPoint;
-			cc.stiffness = PBDSTIFFNESS;
-			cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
-			m_ContainerConstraints.push_back(cc);
+				ContainerConstraint cc;
+				cc.particleIndex = currentParticle->Index;
+				cc.normalVector = glm::vec2(1.0f, 0.0f);
+				cc.projectionPoint = intersectionPoint;
+				cc.stiffness = PBDSTIFFNESSFLUIDCONTAINER;
+				cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTEDFLUIDCONTAINTER;
+				m_ContainerConstraints.push_back(cc);
+			}	
 		}
 
 		if (currentParticle->PredictedPosition.y < PARTICLE_TOPLIMIT)
 		{
-			float fIntersectionCoeff = (PARTICLE_TOPLIMIT - currentParticle->Position.y) / (currentParticle->PredictedPosition.y - currentParticle->Position.y);
-			glm::vec2 intersectionPoint = glm::vec2(currentParticle->Position.x + fIntersectionCoeff * (currentParticle->PredictedPosition.x - currentParticle->Position.x),
-				PARTICLE_TOPLIMIT);
+			if (currentParticle->PredictedPosition.y - currentParticle->Position.y != 0.0f)
+			{
+				fIntersectionCoeff = (PARTICLE_TOPLIMIT - currentParticle->Position.y) / (currentParticle->PredictedPosition.y - currentParticle->Position.y);
+				intersectionPoint = glm::vec2(currentParticle->Position.x + fIntersectionCoeff * (currentParticle->PredictedPosition.x - currentParticle->Position.x), PARTICLE_TOPLIMIT);
 
-			ContainerConstraint cc;
-			cc.particleIndex = currentParticle->Index;
-			cc.normalVector = glm::vec2(0.0f, 1.0f);
-			cc.projectionPoint = intersectionPoint;
-			cc.stiffness = PBDSTIFFNESS;
-			cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
-			m_ContainerConstraints.push_back(cc);
+				ContainerConstraint cc;
+				cc.particleIndex = currentParticle->Index;
+				cc.normalVector = glm::vec2(0.0f, 1.0f);
+				cc.projectionPoint = intersectionPoint;
+				cc.stiffness = PBDSTIFFNESSFLUIDCONTAINER;
+				cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTEDFLUIDCONTAINTER;
+				m_ContainerConstraints.push_back(cc);
+			}
 		}
 
 		if (currentParticle->PredictedPosition.x > PARTICLE_RIGHTLIMIT)
 		{
-			float fIntersectionCoeff = (PARTICLE_RIGHTLIMIT - currentParticle->Position.x) / (currentParticle->PredictedPosition.x - currentParticle->Position.x);
-			glm::vec2 intersectionPoint = glm::vec2(PARTICLE_RIGHTLIMIT,
-				currentParticle->Position.y + fIntersectionCoeff * (currentParticle->PredictedPosition.y - currentParticle->Position.y));
+			if (currentParticle->PredictedPosition.x - currentParticle->Position.x != 0.0f)
+			{
+				fIntersectionCoeff = (PARTICLE_RIGHTLIMIT - currentParticle->Position.x) / (currentParticle->PredictedPosition.x - currentParticle->Position.x);
+				intersectionPoint = glm::vec2(PARTICLE_RIGHTLIMIT, currentParticle->Position.y + fIntersectionCoeff * (currentParticle->PredictedPosition.y - currentParticle->Position.y));
 
-			ContainerConstraint cc;
-			cc.particleIndex = currentParticle->Index;
-			cc.normalVector = glm::vec2(-1.0f, 0.0f);
-			cc.projectionPoint = intersectionPoint;
-			cc.stiffness = PBDSTIFFNESS;
-			cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
-			m_ContainerConstraints.push_back(cc);
+				ContainerConstraint cc;
+				cc.particleIndex = currentParticle->Index;
+				cc.normalVector = glm::vec2(-1.0f, 0.0f);
+				cc.projectionPoint = intersectionPoint;
+				cc.stiffness = PBDSTIFFNESSFLUIDCONTAINER;
+				cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTEDFLUIDCONTAINTER;
+				m_ContainerConstraints.push_back(cc);
+			}
 		}
 
 		if (currentParticle->PredictedPosition.y > PARTICLE_BOTTOMLIMIT)
 		{
 			if (currentParticle->PredictedPosition.y - currentParticle->Position.y != 0.0f)
 			{
-				float fIntersectionCoeff = (PARTICLE_BOTTOMLIMIT - currentParticle->Position.y) / (currentParticle->PredictedPosition.y - currentParticle->Position.y);
-				glm::vec2 intersectionPoint = glm::vec2(currentParticle->Position.x + fIntersectionCoeff * (currentParticle->PredictedPosition.x - currentParticle->Position.x),
-					PARTICLE_BOTTOMLIMIT);
+				fIntersectionCoeff = (PARTICLE_BOTTOMLIMIT - currentParticle->Position.y) / (currentParticle->PredictedPosition.y - currentParticle->Position.y);
+				intersectionPoint = glm::vec2(currentParticle->Position.x + fIntersectionCoeff * (currentParticle->PredictedPosition.x - currentParticle->Position.x), PARTICLE_BOTTOMLIMIT);
 
 				ContainerConstraint cc;
 				cc.particleIndex = currentParticle->Index;
 				cc.normalVector = glm::vec2(0.0f, -1.0f);
 				cc.projectionPoint = intersectionPoint;
-				cc.stiffness = PBDSTIFFNESS;
-				cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTED;
+				cc.stiffness = PBDSTIFFNESSFLUIDCONTAINER;
+				cc.stiffness_adjusted = PBDSTIFFNESS_ADJUSTEDFLUIDCONTAINTER;
 				m_ContainerConstraints.push_back(cc);
 			}
 		}

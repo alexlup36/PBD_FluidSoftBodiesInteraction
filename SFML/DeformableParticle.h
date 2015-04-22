@@ -4,13 +4,13 @@
 #include "BaseParticle.h"
 #include "ParticleManager.h"
 
+class SoftBody;
+
 struct Edge
 {
 	DeformableParticle* Start;
 	DeformableParticle* End;
 };
-
-class SoftBody;
 
 class DeformableParticle : public BaseParticle
 {
@@ -30,6 +30,7 @@ public:
 		m_ControlledColor	= sf::Color::Red;
 		m_DefaultColor		= color;
 		SetDefaultColor();
+		m_Shape.setOutlineThickness(0.0f);
 
 		// Position
 		OriginalPosition	= position;
@@ -66,9 +67,104 @@ public:
 	inline void SetControlledColor() { m_Shape.setFillColor(m_ControlledColor); }
 
 	inline bool IsFixedParticle() { return m_bFixed; }
+	inline void SetFixedParticle(const glm::vec2& pos) 
+	{ 
+		m_bFixed = true; 
+		PredictedPosition = pos;
+	}
+	inline void ReleaseParticle()
+	{
+		m_bFixed = false;
+	}
 
 	inline void SetParentRef(SoftBody* parent) { m_pParentReference = parent; }
 	inline SoftBody* GetParent() { return m_pParentReference; }
+
+	static bool IsPointInsidePolygon(const glm::vec2& point, const std::vector<Edge>& edgeList)
+	{
+		// Axis aligned bounding box
+		float xMin, yMin, xMax, yMax;;
+		xMin = yMin = std::numeric_limits<float>::max();
+		xMax = yMax = std::numeric_limits<float>::min();
+
+		for each (Edge e in edgeList)
+		{
+			float startXEdge = e.Start->Position.x;
+			float endXEdge = e.End->Position.x;
+			float startYEdge = e.Start->Position.y;
+			float endYEdge = e.End->Position.y;
+
+			// X
+			if (startXEdge < xMin)
+			{
+				xMin = startXEdge;
+			}
+			if (startXEdge > xMax)
+			{
+				xMax = startXEdge;
+			}
+			if (endXEdge < xMin)
+			{
+				xMin = endXEdge;
+			}
+			if (endXEdge > xMax)
+			{
+				xMax = endXEdge;
+			}
+
+			// Y
+			if (startYEdge < yMin)
+			{
+				yMin = startYEdge;
+			}
+			if (startYEdge > yMax)
+			{
+				yMax = startYEdge;
+			}
+			if (endYEdge < yMin)
+			{
+				yMin = endYEdge;
+			}
+			if (endYEdge > yMax)
+			{
+				yMax = endYEdge;
+			}
+		}
+
+		// Check against bounding box
+		if (point.x < xMin || point.x > xMax || point.y < yMin || point.y > yMax)
+		{
+			return false;
+		}
+
+		// Build ray
+		float xStartRay = xMin - EPS;
+		float yStartRay = point.y;
+		float xEndRay = point.x;
+		float yEndRay = point.y;
+
+		unsigned int intersections = 0;
+
+		// Check each edge for intersection
+		for each (Edge e in edgeList)
+		{
+			if (Intersecting(xStartRay, yStartRay, xEndRay, yEndRay,
+				e.Start->Position.x, e.Start->Position.y, e.End->Position.x, e.End->Position.y))
+			{
+				intersections++;
+			}
+		}
+
+		// even hits outside, odd hits inside
+		if (intersections % 2 == 0)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
 
 	// ------------------------------------------------------------------------
 	// Public members
@@ -94,9 +190,7 @@ private:
 
 	sf::CircleShape m_GoalShape;
 
-	glm::vec2 m_ClosesPoint;
 	glm::vec2 m_vIntersectionPoint;
-	Edge m_ClosestEdge;
 };
 
 #endif // DEFORMABLEPARTICLE_H

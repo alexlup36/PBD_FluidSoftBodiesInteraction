@@ -54,6 +54,60 @@ inline bool IsBetween(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2&
 
 // ----------------------------------------------------------------------------
 
+// http://stackoverflow.com/questions/217578/point-in-polygon-aka-hit-test
+inline bool Intersecting(float start1X, float start1Y, float end1X, float end1Y,
+	float start2X, float start2Y, float end2X, float end2Y)
+{
+	float d1, d2;
+	float a1, a2, b1, b2, c1, c2;
+
+	// Convert vector 1 to a line (line 1) of infinite length.
+	// We want the line in linear equation standard form: A*x + B*y + C = 0
+	a1 = end1Y - start1Y;
+	b1 = start1X - end1X;
+	c1 = (end1X * start1Y) - (start1X * end1Y);
+
+	// Every point (x,y), that solves the equation above, is on the line,
+	// every point that does not solve it, is either above or below the line.
+	// We insert (x1,y1) and (x2,y2) of vector 2 into the equation above.
+	d1 = (a1 * start2X) + (b1 * start2Y) + c1;
+	d2 = (a1 * end2X) + (b1 * end2Y) + c1;
+
+	// If d1 and d2 both have the same sign, they are both on the same side of
+	// our line 1 and in that case no intersection is possible. Careful, 0 is
+	// a special case, that's why we don't test ">=" and "<=", but "<" and ">".
+	if (d1 > 0 && d2 > 0) return false;
+	if (d1 < 0 && d2 < 0) return false;
+
+	// We repeat everything above for vector 2.
+	// We start by calculating line 2 in linear equation standard form.
+	a2 = end2Y - start2Y;
+	b2 = start2X - end2X;
+	c2 = (end2X * start2Y) - (start2X * end2Y);
+
+	// Calculate d1 and d2 again, this time using points of vector 1
+	d1 = (a2 * start1X) + (b2 * start1Y) + c2;
+	d2 = (a2 * end1X) + (b2 * end1Y) + c2;
+
+	// Again, if both have the same sign (and neither one is 0),
+	// no intersection is possible.
+	if (d1 > 0 && d2 > 0) return false;
+	if (d1 < 0 && d2 < 0) return false;
+
+	// If we get here, only three possibilities are left. Either the two
+	// vectors intersect in exactly one point or they are collinear
+	// (they both lie both on the same infinite line), in which case they
+	// may intersect in an infinite number of points or not at all.
+	if ((a1 * b2) - (a2 * b1) == 0.0f) return false;
+
+	// If they are not collinear, they must intersect in exactly one point.
+	return true;
+}
+
+
+
+// ----------------------------------------------------------------------------
+
 inline float SquareRootFloat(float number) {
 	long i;
 	float x, y;
@@ -89,7 +143,7 @@ inline sf::Color GetRandomColor()
 
 // Window
 const sf::Vector2i WindowResolution = sf::Vector2i(1920, 1080);
-const float HorizontalOffset		= 500.0f;
+const float HorizontalOffset		= 100.0f;
 const float VerticalOffsetTop		= 150.0f;
 const float VerticalOffsetBottom	= 50.0f; 
 
@@ -136,7 +190,7 @@ const float PARTICLE_BOTTOMLIMIT	= WALL_BOTTOMLIMIT - PARTICLE_RADIUS - 1.0f;
 
 const glm::vec2 GRAVITATIONAL_ACCELERATION(0.0f, 9.81f);
 const bool GRAVITY_ON			= true;
-const bool FLUID_SIMULATION		= false;
+const bool FLUID_SIMULATION		= true;
 const bool SOFTBODY_SIMULATION	= true;
 
 // Solver iterations
@@ -145,6 +199,12 @@ const int SOLVER_ITERATIONS = 3;
 // PBD constants
 const float PBDSTIFFNESS			= 0.1f;
 const float PBDSTIFFNESS_ADJUSTED	= 1.0f - pow(1.0f - PBDSTIFFNESS, 1.0f / SOLVER_ITERATIONS);
+
+const float PBDSTIFFNESSFLUIDCONTAINER = 0.8f;
+const float PBDSTIFFNESS_ADJUSTEDFLUIDCONTAINTER = 1.0f - pow(1.0f - PBDSTIFFNESSFLUIDCONTAINER, 1.0f / SOLVER_ITERATIONS);
+
+const float PBDSTIFFNESSSB			= 0.9;
+const float PBDSTIFFNESS_ADJUSTEDSB = 1.0f - pow(1.0f - PBDSTIFFNESSSB, 1.0f / SOLVER_ITERATIONS);
 
 
 #endif // COMMON_H
