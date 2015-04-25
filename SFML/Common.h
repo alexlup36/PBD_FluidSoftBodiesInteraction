@@ -142,7 +142,7 @@ inline sf::Color GetRandomColor()
 
 
 // Window
-const sf::Vector2i WindowResolution = sf::Vector2i(1920, 1080);
+const sf::Vector2i WindowResolution = sf::Vector2i(1024, 768);
 const float HorizontalOffset		= 100.0f;
 const float VerticalOffsetTop		= 150.0f;
 const float VerticalOffsetBottom	= 50.0f; 
@@ -203,7 +203,7 @@ const float PBDSTIFFNESS_ADJUSTED	= 1.0f - pow(1.0f - PBDSTIFFNESS, 1.0f / SOLVE
 const float PBDSTIFFNESSFLUIDCONTAINER = 0.8f;
 const float PBDSTIFFNESS_ADJUSTEDFLUIDCONTAINTER = 1.0f - pow(1.0f - PBDSTIFFNESSFLUIDCONTAINER, 1.0f / SOLVER_ITERATIONS);
 
-const float PBDSTIFFNESSSB			= 0.9;
+const float PBDSTIFFNESSSB			= 0.9f;
 const float PBDSTIFFNESS_ADJUSTEDSB = 1.0f - pow(1.0f - PBDSTIFFNESSSB, 1.0f / SOLVER_ITERATIONS);
 
 

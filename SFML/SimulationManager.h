@@ -33,9 +33,9 @@ public:
 		m_SimulationList.push_back(pSimulation);
 	}
 
-	inline std::vector<BaseSimulation*>		GetSimulationList()			{ return m_SimulationList; }
-	inline std::vector<FluidSimulation*>	GetFluidSimulationList()	{ return m_FluidSimulationList; }
-	inline std::vector<SoftBody*>			GetSoftBodySimulationList() { return m_SoftBodyList; }
+	inline std::vector<BaseSimulation*>&	GetSimulationList()			{ return m_SimulationList; }
+	inline std::vector<FluidSimulation*>&	GetFluidSimulationList()	{ return m_FluidSimulationList; }
+	inline std::vector<SoftBody*>&			GetSoftBodySimulationList() { return m_SoftBodyList; }
 
 private:
 	// -----------------------------------------------------------------------------

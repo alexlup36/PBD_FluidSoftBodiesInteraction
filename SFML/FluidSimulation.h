@@ -47,7 +47,7 @@ public:
 		m_ThreadPool = nullptr;
 #endif // MULTITHREADING
 
-		m_FluidStats = new Stats(font, 1500.0f, 20.0f, 30, sf::Color::Red);
+		m_FluidStats = new Stats(font, WindowResolution.x - 250.0f, 20.0f, 30, sf::Color::Red);
 		
 		m_Properties.push_back(Settings::VelocityDamping);
 		m_Properties.push_back(Settings::Viscosity);
@@ -94,10 +94,10 @@ private:
 	typedef boost::function<void()> Task;
 	std::vector<Task> LambdaTaskList;
 	std::vector<Task> PositionCorrectionTaskList;
-	std::vector<Task> ParticleConstratinTaskList;
+	std::vector<Task> ParticleConstraintTaskList;
 	std::vector<Task> MinTransDistanceTaskList;
 
-	unsigned int m_iThreadCount = 6;
+	unsigned int m_iThreadCount = 4;
 
 #endif // MULTITHREADING
 
@@ -118,7 +118,7 @@ private:
 	// -------------------------------------------------------------------------------
 
 	float m_fVelocityDamping	= 0.999f;
-	float m_fXSPHParam			= 1.0f;
+	float m_fXSPHParam			= -30.0f;
 
 	// Constants
 	const bool XSPH_VISCOSITY = true;

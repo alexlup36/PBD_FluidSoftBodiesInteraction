@@ -36,7 +36,7 @@ void Draw(sf::RenderWindow& window)
 	if (FLUID_SIMULATION)
 	{
 		// Fluid application draw
-		std::vector<FluidSimulation*> simulationList = SimulationManager::GetInstance().GetFluidSimulationList();
+		std::vector<FluidSimulation*>& simulationList = SimulationManager::GetInstance().GetFluidSimulationList();
 		for each (FluidSimulation* fluidSim in simulationList)
 		{
 			fluidSim->Draw(window);
@@ -46,7 +46,7 @@ void Draw(sf::RenderWindow& window)
 	if (SOFTBODY_SIMULATION)
 	{
 		// Soft-bodies draw
-		std::vector<SoftBody*> SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+		std::vector<SoftBody*>& SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
 		for each (SoftBody* pSoftBody in SoftBodyList)
 		{
 			pSoftBody->Draw(window);
@@ -71,11 +71,11 @@ int main()
 	float fAverageTimePerFrame = 0.0f;
 
 	float fBenchmarkTimeAccumulator = 0.0f; // Seconds
-	float fBenchmarkLength = 30.0; // seconds
+	float fBenchmarkLength = 60.0; // seconds
 
 	// Create file stream
 	std::ofstream outFile;
-	outFile.open("benchmarkFluid.txt", std::ios_base::app);
+	outFile.open("BenchmarkResults.txt", std::ios_base::app);
 
 	// --------------------------------------------------------------------------
 
@@ -89,13 +89,12 @@ int main()
 	// ---------------------------------------------------------------------------
 	// Time
 	sf::Clock timer;
-	sf::Time currentTime = timer.getElapsedTime();
+	sf::Time currentTime;
 	sf::Time newTime;
 	sf::Time intervalTime;
 	float fTimeAccumulator = 0.0f;
-	float fNextGameTick = FIXED_DELTA;
 	float fFrameTime = 0.0f;
-	unsigned int iFrameCount = 0;
+	bool bFirstFrame = true;
 
 	// ---------------------------------------------------------------------------
 	// Mouse stats
@@ -148,7 +147,7 @@ int main()
 
 	if (true)
 	{
-		int softBodyCount = 15;
+		int softBodyCount = 5;
 		int width = 6;
 		int height = 6;
 
@@ -199,8 +198,77 @@ int main()
 
 			softBodyInstance->BuildSoftBody();
 		}
+
+		//for (int i = 0; i < softBodyCount; i++)
+		//{
+		//	// Initialize the current soft-body instance
+		//	softBodyInstance = new SoftBody();
+
+		//	// Add the soft body instance to the list of soft bodies
+		//	SimulationManager::GetInstance().AddSimulation(softBodyInstance);
+
+		//	// Calculate starting position
+		//	startPosition.x += fSeparatingOffset;
+
+		//	float startPosX = startPosition.x - width * PARTICLE_RADIUS;
+		//	float startPosY = startPosition.y - height * PARTICLE_RADIUS;
+		//	glm::vec2 currentPosition = glm::vec2(startPosX, startPosY);
+
+		//	for (int i = 0; i < height; i++)
+		//	{
+		//		currentPosition.x = startPosX;
+
+		//		if (i == 0 || i == height - 1)
+		//		{
+		//			for (int j = 0; j < width; j++)
+		//			{
+		//				// Create a soft body particle
+		//				DeformableParticle* sbParticle = new DeformableParticle(glm::vec2(currentPosition.x,
+		//					currentPosition.y), randomColor, softBodyInstance->GetSimulationIndex());
+
+		//				// Set parent reference
+		//				sbParticle->SetParentRef(softBodyInstance);
+
+		//				// Add the newly created particle to the soft-body collection
+		//				softBodyInstance->AddSoftBodyParticle(*sbParticle);
+
+		//				// Update position
+		//				currentPosition.x += (PARTICLE_RADIUS * 2.0f) + dt;
+		//			}
+		//		}
+		//		else
+		//		{
+		//			for (int j = 0; j < width; j++)
+		//			{
+		//				if (j == 0 || j == width - 1)
+		//				{
+		//					// Create a soft body particle
+		//					DeformableParticle* sbParticle = new DeformableParticle(glm::vec2(currentPosition.x,
+		//						currentPosition.y), randomColor, softBodyInstance->GetSimulationIndex());
+
+		//					// Set parent reference
+		//					sbParticle->SetParentRef(softBodyInstance);
+
+		//					// Add the newly created particle to the soft-body collection
+		//					softBodyInstance->AddSoftBodyParticle(*sbParticle);
+		//				}
+
+		//				// Update position
+		//				currentPosition.x += (PARTICLE_RADIUS * 2.0f) + dt;
+		//			}
+		//		}
+
+		//		currentPosition.y += (PARTICLE_RADIUS * 2.0f) + dt;
+		//	}
+
+		//	softBodyInstance->BuildSoftBody();
+		//}
 	}
 	
+	// ---------------------------------------------------------------------------
+
+	currentTime = timer.getElapsedTime();
+
 	// ---------------------------------------------------------------------------
 
 	// Main loop
@@ -471,7 +539,7 @@ int main()
 
 								float fMinimumDistance = std::numeric_limits<float>::max();
 
-								std::vector<SoftBody*> SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+								std::vector<SoftBody*>& SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
 								for each (SoftBody* pSoftBody in SoftBodyList)
 								{
 									// Get the particle list in the current soft-body
@@ -539,7 +607,7 @@ int main()
 					// Fluid application update 	
 					for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
 					{
-						fluidSim->InputUpdate(event.mouseWheel.delta, 0);
+						fluidSim->InputUpdate((float)event.mouseWheel.delta, 0);
 					}
 				}
 
@@ -571,12 +639,7 @@ int main()
 		// Handle simulation time
 		newTime = timer.getElapsedTime();
 		intervalTime = newTime - currentTime;
-		int loops = 0;
 		fFrameTime = intervalTime.asSeconds();
-		/*if (fFrameTime > 0.25f)
-		{
-			fFrameTime = 0.25f;
-		}*/
 		currentTime = newTime;
 		fTimeAccumulator += fFrameTime;
 
@@ -603,7 +666,7 @@ int main()
 #else
 				outFile << "Single threaded." << std::endl;
 #endif // MULTITHREADING
-				outFile << "Particle count: " << FluidSimulationList[0]->GetPaticleCount() << std::endl;
+				outFile << "Fluid particle count: " << FluidSimulationList[0]->GetPaticleCount() << std::endl;
 				outFile << "Min FPS: " << iMinFPS << std::endl;
 				outFile << "Max FPS: " << iMaxFPS << std::endl;
 				outFile << "Average FPS: " << fAverageFPS << std::endl;
@@ -614,6 +677,7 @@ int main()
 				outFile << "Average time per frame: " << fAverageTimePerFrame << std::endl;
 
 				outFile << "Soft body count: " << SoftBodiesList.size() << std::endl;
+				outFile << "Soft body particle count: " << ParticleManager::GetInstance().GetDeformableParticles().size() << std::endl;
 
 				outFile.close();
 				window.close();
@@ -623,37 +687,30 @@ int main()
 		// Get the total particle count
 		unsigned int iParticleCount = ParticleManager::GetInstance().GetParticles().size();
 
-		/*while (fTimeAccumulator > fNextGameTick && loops < MAX_FRAMESKIP)
-		{*/
-			for (int speedCounter = 0; speedCounter < SPEEDMULTIPLIER; speedCounter++)
+		for (int speedCounter = 0; speedCounter < SPEEDMULTIPLIER; speedCounter++)
+		{
+			if (FLUID_SIMULATION)
 			{
-				if (FLUID_SIMULATION)
+				// Fluid application update 	
+				for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
 				{
-					// Fluid application update 	
-					for each (std::shared_ptr<FluidSimulation> fluidSim in FluidSimulationList)
-					{
-						fluidSim->Update(window, FIXED_DELTA);
-					}
-				}
-				
-				if (SOFTBODY_SIMULATION)
-				{
-					// Soft-bodies update
-					std::vector<SoftBody*> SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
-					for each (SoftBody* pSoftBody in SoftBodyList)
-					{
-						pSoftBody->Update(FIXED_DELTA);
-					}
+					fluidSim->Update(window, FIXED_DELTA);
 				}
 			}
-
-			fNextGameTick += FIXED_DELTA;
-			loops++;
-		//}
+				
+			if (SOFTBODY_SIMULATION)
+			{
+				// Soft-bodies update
+				std::vector<SoftBody*>& SoftBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+				for each (SoftBody* pSoftBody in SoftBodyList)
+				{
+					pSoftBody->Update(FIXED_DELTA);
+				}
+			}
+		}
 
 		// Calculate FPS
 		iFPS = (unsigned int)(1.0f / intervalTime.asSeconds());
-		iFrameCount = 0;
 
 		// Update benchmark data
 		if (iFPS > iMaxFPS)

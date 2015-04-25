@@ -23,7 +23,7 @@ float DeformableParticle::CalculateMinimumTranslationDistance()
 	float fMinDistance = 0.0f;
 	SignedDistance = 0.0f;
 
-	std::vector<SoftBody*> softBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
+	std::vector<SoftBody*>& softBodyList = SimulationManager::GetInstance().GetSoftBodySimulationList();
 
 	for each (SoftBody* pSoftBody in softBodyList)
 	{
@@ -31,7 +31,7 @@ float DeformableParticle::CalculateMinimumTranslationDistance()
 		if (pSoftBody->GetSimulationIndex() != GetParent()->GetSimulationIndex())
 		{
 			// Get the edge list
-			std::vector<Edge> edgeList = pSoftBody->GetConvexHull().GetEdgeList();
+			std::vector<Edge>& edgeList = pSoftBody->GetConvexHull().GetEdgeList();
 
 			// Particle is inside the convex hull => push it outside
 			if (IsPointInsidePolygon(Position, edgeList))

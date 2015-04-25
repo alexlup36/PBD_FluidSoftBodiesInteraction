@@ -24,7 +24,7 @@ public:
 		const DeformableParticle& p2,
 		const DeformableParticle& p3);
 
-	const std::vector<Edge>& GetEdgeList() { return m_EdgeList; }
+	inline std::vector<Edge>& GetEdgeList() { return m_EdgeList; }
 
 private:
 

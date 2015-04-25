@@ -63,7 +63,7 @@ private:
 
 	// Constants
 	const float SOFTBODY_RESTITUTION_COEFF = 0.9f;
-	const float SOFTBODY_STIFFNESS_VALUE = 0.3f; // 0.0f - elastic 1.0f - solid
+	const float SOFTBODY_STIFFNESS_VALUE = 0.2f; // 0.0f - elastic 1.0f - solid
 
 	const float SOFTBODYPARTICLE_LEFTLIMIT = WALL_LEFTLIMIT + PARTICLE_RADIUS;
 	const float SOFTBODYPARTICLE_RIGHTLIMIT = WALL_RIGHTLIMIT - PARTICLE_RADIUS;

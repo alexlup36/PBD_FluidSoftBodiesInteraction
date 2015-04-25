@@ -37,9 +37,9 @@ void FluidSimulation::Update(sf::RenderWindow& window, float dt)
 		// Particle constraint
 #ifdef MULTITHREADING
 
-		for (unsigned int i = 0; i < LambdaTaskList.size(); i++)
+		for (unsigned int i = 0; i < ParticleConstraintTaskList.size(); i++)
 		{
-			m_ThreadPool->schedule(ParticleConstratinTaskList[i]);
+			m_ThreadPool->schedule(ParticleConstraintTaskList[i]);
 		}
 
 		m_ThreadPool->wait();
@@ -249,7 +249,7 @@ void FluidSimulation::Draw(sf::RenderWindow& window)
 	if (FLUIDRENDERING_PARTICLE)
 	{
 		// Draw particles
-		for (int index = 0; index < m_ParticleList.size(); index++)
+		for (unsigned int index = 0; index < m_ParticleList.size(); index++)
 		{
 			m_ParticleList[index]->Draw(window);
 		}
@@ -349,7 +349,7 @@ void FluidSimulation::SetupMultithread()
 	}
 	LambdaTaskList.clear();
 	PositionCorrectionTaskList.clear();
-	ParticleConstratinTaskList.clear();
+	ParticleConstraintTaskList.clear();
 	MinTransDistanceTaskList.clear();
 
 	// Create a list of tasks
@@ -377,7 +377,7 @@ void FluidSimulation::SetupMultithread()
 			iStartIndex,
 			iEndIndex));
 
-		ParticleConstratinTaskList.push_back(boost::bind(&FluidSimulation::ComputeParticleConstraintMultithread,
+		ParticleConstraintTaskList.push_back(boost::bind(&FluidSimulation::ComputeParticleConstraintMultithread,
 			this,
 			iStartIndex,
 			iEndIndex));

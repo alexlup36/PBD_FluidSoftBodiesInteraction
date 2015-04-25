@@ -1,0 +1,325 @@
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 8
+Max FPS: 186
+Average FPS: 148.041
+Total Frames: 6662
+Min time per frame: 0.005374
+Max time per frame: 0.121757
+Average time per frame: 0.00675486
+Soft body count: 0
+Soft body particle count: 36
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 8
+Max FPS: 139
+Average FPS: 117.044
+Total Frames: 5267
+Min time per frame: 0.007176
+Max time per frame: 0.117723
+Average time per frame: 0.0085438
+Soft body count: 0
+Soft body particle count: 144
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 9
+Max FPS: 102
+Average FPS: 86.8484
+Total Frames: 3909
+Min time per frame: 0.009769
+Max time per frame: 0.1088
+Average time per frame: 0.0115143
+Soft body count: 0
+Soft body particle count: 252
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 7
+Max FPS: 76
+Average FPS: 65.9774
+Total Frames: 2969
+Min time per frame: 0.013061
+Max time per frame: 0.133691
+Average time per frame: 0.0151567
+Soft body count: 0
+Soft body particle count: 360
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 9
+Max FPS: 59
+Average FPS: 50.2811
+Total Frames: 2263
+Min time per frame: 0.016924
+Max time per frame: 0.108209
+Average time per frame: 0.0198882
+Soft body count: 0
+Soft body particle count: 468
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 10
+Max FPS: 47
+Average FPS: 40.316
+Total Frames: 1815
+Min time per frame: 0.021227
+Max time per frame: 0.097967
+Average time per frame: 0.024804
+Soft body count: 0
+Soft body particle count: 576
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 5
+Max FPS: 38
+Average FPS: 32.9036
+Total Frames: 1481
+Min time per frame: 0.025747
+Max time per frame: 0.174107
+Average time per frame: 0.0303918
+Soft body count: 0
+Soft body particle count: 684
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 900
+Min FPS: 8
+Max FPS: 30
+Average FPS: 27.6909
+Total Frames: 1247
+Min time per frame: 0.032293
+Max time per frame: 0.111558
+Average time per frame: 0.036113
+Soft body count: 0
+Soft body particle count: 792
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 9
+Max FPS: 70
+Average FPS: 55.7537
+Total Frames: 3346
+Min time per frame: 0.014144
+Max time per frame: 0.102764
+Average time per frame: 0.017936
+Soft body count: 0
+Soft body particle count: 36
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 9
+Max FPS: 59
+Average FPS: 46.5998
+Total Frames: 2796
+Min time per frame: 0.016903
+Max time per frame: 0.110172
+Average time per frame: 0.0214593
+Soft body count: 0
+Soft body particle count: 144
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 8
+Max FPS: 48
+Average FPS: 38.0917
+Total Frames: 2286
+Min time per frame: 0.020561
+Max time per frame: 0.112253
+Average time per frame: 0.0262524
+Soft body count: 0
+Soft body particle count: 252
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 7
+Max FPS: 38
+Average FPS: 31.1262
+Total Frames: 1868
+Min time per frame: 0.026009
+Max time per frame: 0.133867
+Average time per frame: 0.0321273
+Soft body count: 0
+Soft body particle count: 360
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 6
+Max FPS: 32
+Average FPS: 25.6991
+Total Frames: 1542
+Min time per frame: 0.031219
+Max time per frame: 0.160356
+Average time per frame: 0.0389118
+Soft body count: 0
+Soft body particle count: 468
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 4
+Max FPS: 27
+Average FPS: 21.4627
+Total Frames: 1288
+Min time per frame: 0.036333
+Max time per frame: 0.219706
+Average time per frame: 0.0465924
+Soft body count: 0
+Soft body particle count: 576
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 8
+Max FPS: 22
+Average FPS: 18.5502
+Total Frames: 1114
+Min time per frame: 0.045266
+Max time per frame: 0.114981
+Average time per frame: 0.0539077
+Soft body count: 0
+Soft body particle count: 684
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 2500
+Min FPS: 9
+Max FPS: 20
+Average FPS: 16.5137
+Total Frames: 991
+Min time per frame: 0.047855
+Max time per frame: 0.110962
+Average time per frame: 0.0605557
+Soft body count: 0
+Soft body particle count: 792
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 7
+Max FPS: 35
+Average FPS: 27.3621
+Total Frames: 1642
+Min time per frame: 0.027996
+Max time per frame: 0.128008
+Average time per frame: 0.0365469
+Soft body count: 0
+Soft body particle count: 36
+
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 7
+Max FPS: 29
+Average FPS: 23.5507
+Total Frames: 1414
+Min time per frame: 0.033969
+Max time per frame: 0.132211
+Average time per frame: 0.0424616
+Soft body count: 0
+Soft body particle count: 144
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 8
+Max FPS: 24
+Average FPS: 19.5205
+Total Frames: 1172
+Min time per frame: 0.040394
+Max time per frame: 0.121132
+Average time per frame: 0.0512281
+Soft body count: 0
+Soft body particle count: 252
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 5
+Max FPS: 21
+Average FPS: 16.7741
+Total Frames: 1007
+Min time per frame: 0.047284
+Max time per frame: 0.178507
+Average time per frame: 0.0596158
+Soft body count: 0
+Soft body particle count: 360
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 5
+Max FPS: 18
+Average FPS: 14.2913
+Total Frames: 858
+Min time per frame: 0.054185
+Max time per frame: 0.199798
+Average time per frame: 0.0699724
+Soft body count: 0
+Soft body particle count: 468
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 7
+Max FPS: 16
+Average FPS: 12.4796
+Total Frames: 749
+Min time per frame: 0.061858
+Max time per frame: 0.127576
+Average time per frame: 0.0801309
+Soft body count: 0
+Soft body particle count: 576
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 3
+Max FPS: 14
+Average FPS: 11.0358
+Total Frames: 663
+Min time per frame: 0.071259
+Max time per frame: 0.265838
+Average time per frame: 0.0906145
+Soft body count: 0
+Soft body particle count: 684
+-------------------------------------------------------------------------
+Thread count: 6
+Fluid particle count: 4900
+Min FPS: 6
+Max FPS: 12
+Average FPS: 10.2091
+Total Frames: 613
+Min time per frame: 0.077832
+Max time per frame: 0.143074
+Average time per frame: 0.0979521
+Soft body count: 0
+Soft body particle count: 792
+-------------------------------------------------------------------------
+Thread count: 6 32
+Fluid particle count: 4900
+Min FPS: 4
+Max FPS: 11
+Average FPS: 9.61943
+Total Frames: 578
+Min time per frame: 0.086704
+Max time per frame: 0.216348
+Average time per frame: 0.103956
+Soft body count: 0
+Soft body particle count: 792
+-------------------------------------------------------------------------
+Thread count: 6 32
+Fluid particle count: 2500
+Min FPS: 8
+Max FPS: 19
+Average FPS: 15.4527
+Total Frames: 928
+Min time per frame: 0.051948
+Max time per frame: 0.115989
+Average time per frame: 0.0647136
+Soft body count: 0
+Soft body particle count: 792
+-------------------------------------------------------------------------
+Thread count: 6 32
+Fluid particle count: 900
+Min FPS: 10
+Max FPS: 29
+Average FPS: 25.3257
+Total Frames: 1520
+Min time per frame: 0.033551
+Max time per frame: 0.098367
+Average time per frame: 0.0394856
+Soft body count: 0
+Soft body particle count: 792
