@@ -1,0 +1,270 @@
+-------------------------------------------------------------------------
+Single threaded.
+Particle count: 900
+Min FPS: 8
+Max FPS: 258
+Average FPS: 131.317
+Total Frames: 3940
+Min time per frame: 0.003874
+Max time per frame: 0.117215
+Average time per frame: 0.00761517
+-------------------------------------------------------------------------
+Single threaded.
+Particle count: 2500
+Min FPS: 8
+Max FPS: 71
+Average FPS: 42.02
+Total Frames: 1261
+Min time per frame: 0.01395
+Max time per frame: 0.112137
+Average time per frame: 0.0237982
+-------------------------------------------------------------------------
+Single threaded.
+Particle count: 4900
+Min FPS: 7
+Max FPS: 27
+Average FPS: 18.7891
+Total Frames: 564
+Min time per frame: 0.036585
+Max time per frame: 0.136409
+Average time per frame: 0.0532223
+-------------------------------------------------------------------------
+Thread count: 1
+Particle count: 900
+Min FPS: 8
+Max FPS: 202
+Average FPS: 108.363
+Total Frames: 3251
+Min time per frame: 0.004931
+Max time per frame: 0.123797
+Average time per frame: 0.00922823
+-------------------------------------------------------------------------
+Thread count: 2
+Particle count: 900
+Min FPS: 7
+Max FPS: 210
+Average FPS: 135.146
+Total Frames: 4055
+Min time per frame: 0.00475
+Max time per frame: 0.142566
+Average time per frame: 0.00739941
+-------------------------------------------------------------------------
+Thread count: 3
+Particle count: 900
+Min FPS: 6
+Max FPS: 216
+Average FPS: 150.418
+Total Frames: 4513
+Min time per frame: 0.004617
+Max time per frame: 0.151183
+Average time per frame: 0.00664815
+-------------------------------------------------------------------------
+Thread count: 4
+Particle count: 900
+Min FPS: 6
+Max FPS: 220
+Average FPS: 157.189
+Total Frames: 4716
+Min time per frame: 0.004545
+Max time per frame: 0.151768
+Average time per frame: 0.00636176
+-------------------------------------------------------------------------
+Thread count: 5
+Particle count: 900
+Min FPS: 8
+Max FPS: 215
+Average FPS: 162.344
+Total Frames: 4871
+Min time per frame: 0.004638
+Max time per frame: 0.112952
+Average time per frame: 0.00615974
+-------------------------------------------------------------------------
+Thread count: 6
+Particle count: 900
+Min FPS: 4
+Max FPS: 215
+Average FPS: 160.732
+Total Frames: 4822
+Min time per frame: 0.00464
+Max time per frame: 0.221904
+Average time per frame: 0.00622153
+-------------------------------------------------------------------------
+Thread count: 12
+Particle count: 900
+Min FPS: 8
+Max FPS: 178
+Average FPS: 143.935
+Total Frames: 4319
+Min time per frame: 0.005617
+Max time per frame: 0.112435
+Average time per frame: 0.00694758
+-------------------------------------------------------------------------
+Thread count: 24
+Particle count: 900
+Min FPS: 7
+Max FPS: 130
+Average FPS: 107.826
+Total Frames: 3235
+Min time per frame: 0.007678
+Max time per frame: 0.137368
+Average time per frame: 0.00927418
+-------------------------------------------------------------------------
+Thread count: 1
+Particle count: 2500
+Min FPS: 10
+Max FPS: 59
+Average FPS: 36.8149
+Total Frames: 1105
+Min time per frame: 0.016922
+Max time per frame: 0.097387
+Average time per frame: 0.0271629
+-------------------------------------------------------------------------
+Thread count: 2
+Particle count: 2500
+Min FPS: 7
+Max FPS: 71
+Average FPS: 46.3045
+Total Frames: 1390
+Min time per frame: 0.013943
+Max time per frame: 0.136988
+Average time per frame: 0.0215962
+-------------------------------------------------------------------------
+Thread count: 3
+Particle count: 2500
+Min FPS: 7
+Max FPS: 77
+Average FPS: 52.5819
+Total Frames: 1578
+Min time per frame: 0.012981
+Max time per frame: 0.140539
+Average time per frame: 0.0190179
+-------------------------------------------------------------------------
+Thread count: 4
+Particle count: 2500
+Min FPS: 7
+Max FPS: 78
+Average FPS: 56.7968
+Total Frames: 1704
+Min time per frame: 0.012735
+Max time per frame: 0.130975
+Average time per frame: 0.0176066
+-------------------------------------------------------------------------
+Thread count: 5
+Particle count: 2500
+Min FPS: 9
+Max FPS: 81
+Average FPS: 59.8401
+Total Frames: 1796
+Min time per frame: 0.012197
+Max time per frame: 0.109905
+Average time per frame: 0.0167112
+-------------------------------------------------------------------------
+Thread count: 6
+Particle count: 2500
+Min FPS: 9
+Max FPS: 80
+Average FPS: 61.4358
+Total Frames: 1844
+Min time per frame: 0.012415
+Max time per frame: 0.109682
+Average time per frame: 0.0162772
+-------------------------------------------------------------------------
+Thread count: 12
+Particle count: 2500
+Min FPS: 8
+Max FPS: 80
+Average FPS: 59.6857
+Total Frames: 1791
+Min time per frame: 0.012432
+Max time per frame: 0.119816
+Average time per frame: 0.0167544
+-------------------------------------------------------------------------
+Thread count: 24
+Particle count: 2500
+Min FPS: 10
+Max FPS: 70
+Average FPS: 55.2506
+Total Frames: 1658
+Min time per frame: 0.014154
+Max time per frame: 0.091186
+Average time per frame: 0.0180993
+-------------------------------------------------------------------------
+Thread count: 1
+Particle count: 4900
+Min FPS: 7
+Max FPS: 24
+Average FPS: 17.1188
+Total Frames: 514
+Min time per frame: 0.041329
+Max time per frame: 0.133219
+Average time per frame: 0.0584153
+-------------------------------------------------------------------------
+Thread count: 2
+Particle count: 4900
+Min FPS: 8
+Max FPS: 31
+Average FPS: 21.7829
+Total Frames: 654
+Min time per frame: 0.031615
+Max time per frame: 0.115643
+Average time per frame: 0.0459076
+-------------------------------------------------------------------------
+Thread count: 3
+Particle count: 4900
+Min FPS: 7
+Max FPS: 36
+Average FPS: 25.1855
+Total Frames: 756
+Min time per frame: 0.027531
+Max time per frame: 0.137301
+Average time per frame: 0.0397053
+-------------------------------------------------------------------------
+Thread count: 4
+Particle count: 4900
+Min FPS: 7
+Max FPS: 37
+Average FPS: 27.4093
+Total Frames: 823
+Min time per frame: 0.026361
+Max time per frame: 0.139128
+Average time per frame: 0.036484
+-------------------------------------------------------------------------
+Thread count: 5
+Particle count: 4900
+Min FPS: 7
+Max FPS: 40
+Average FPS: 29.2692
+Total Frames: 879
+Min time per frame: 0.024788
+Max time per frame: 0.130325
+Average time per frame: 0.0341657
+-------------------------------------------------------------------------
+Thread count: 6
+Particle count: 4900
+Min FPS: 8
+Max FPS: 41
+Average FPS: 29.9508
+Total Frames: 899
+Min time per frame: 0.023948
+Max time per frame: 0.119599
+Average time per frame: 0.0333881
+-------------------------------------------------------------------------
+Thread count: 12
+Particle count: 4900
+Min FPS: 8
+Max FPS: 41
+Average FPS: 30.6559
+Total Frames: 920
+Min time per frame: 0.024059
+Max time per frame: 0.116652
+Average time per frame: 0.0326202
+-------------------------------------------------------------------------
+Thread count: 24
+Particle count: 4900
+Min FPS: 7
+Max FPS: 38
+Average FPS: 29.7769
+Total Frames: 894
+Min time per frame: 0.025815
+Max time per frame: 0.136815
+Average time per frame: 0.0335831

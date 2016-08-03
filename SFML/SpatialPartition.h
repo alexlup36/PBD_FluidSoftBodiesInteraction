@@ -3,25 +3,43 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include "Common.h"
-#include "Particle.h"
+#include "FluidParticle.h"
 
 class SpatialPartition
 {
 public:
-	SpatialPartition();
-	~SpatialPartition();
+
+	static SpatialPartition& GetInstance()
+	{
+		static SpatialPartition instance;
+		return instance;
+	}
 
 	void Setup();
 	void ClearBuckets();
-	void RegisterObject(Particle* particle);
-	std::vector<Particle*> GetNeighbors(const Particle& particle);
+	void RegisterObject(BaseParticle* particle);
+
+	inline std::map<int, std::vector<int>>& GetBuckets() { return m_Buckets; }
 
 private:
-	std::map<int, std::vector<Particle*>> m_Buckets;
+	// -----------------------------------------------------------------------------
+	// Hide constructor for singleton implementation
+	SpatialPartition() {};
 
-	std::vector<int> GetIdForObject(const Particle& particle);
+	// Delete unneeded copy constructor and assignment operator
+	SpatialPartition(SpatialPartition const&) = delete;
+	void operator=(SpatialPartition const&) = delete;
+	// -----------------------------------------------------------------------------
+
+	std::map<int, std::vector<int>> m_Buckets;
+
+	void GetIdForObject(const BaseParticle& particle, std::set<int>& cellIDList);
+
+	// Multithreading
+	std::mutex m_BucketAccessMutex;
 };
 
 #endif // SPATIAL_PARTITION

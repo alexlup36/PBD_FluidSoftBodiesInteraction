@@ -6,25 +6,44 @@
 class Particle
 {
 public:
-	Particle(const sf::Vector2f& position, float radius);
+	Particle(const glm::vec2& position, float radius);
 	~Particle();
 
-	void Update(float dt);
 	void Draw(sf::RenderWindow& window);
+	void UpdateShapePosition();
 
 	// Getters and setters
-	inline void SetPosition(const sf::Vector2f& newPosition) { m_Position = newPosition; }
-	inline const sf::Vector2f GetPosition() const { return m_Position; }
+	inline void SetPosition(const glm::vec2& newPosition) { m_Position = newPosition; }
+	inline void AddDeltaPosition(const glm::vec2& deltaPosition) { m_Position += deltaPosition; }
+	inline const glm::vec2 GetPosition() const { return m_Position; }
 
-	inline sf::Vector2f GetLocalPosition() const { return m_LocalPosition; }
-	
-	inline void SetVelocity(const sf::Vector2f& newVelocity) { m_Velocity = newVelocity; }
-	inline sf::Vector2f GetVelocity() const { return m_Velocity; }
+	inline void SetPredictedPosition(const glm::vec2& newPredPos) { m_PredictedPosition = newPredPos; }
+	inline void AddDeltaPredPosition(const glm::vec2& deltaPredPosition) { m_PredictedPosition += deltaPredPosition; }
+	inline const glm::vec2 GetPredictedPosition() const { return m_PredictedPosition; }
 
-	inline void SetForce(const sf::Vector2f& newForce) { m_Force = newForce; }
-	inline sf::Vector2f GetForce() const { m_Force; }
+	inline const glm::vec2 GetLocalPosition() const { return m_LocalPosition; }
+	inline void SetLocalPosition(const glm::vec2& newLocalPosition) { m_LocalPosition = newLocalPosition; }
+
+	inline const glm::vec2 GetPositionCorrection() const { return m_PositionCorrection; }
+	inline void SetPositionCorrection(const glm::vec2& positionOffset) { m_PositionCorrection = positionOffset; }
+
+	inline void SetVelocity(const glm::vec2& newVelocity) { m_Velocity = newVelocity; }
+	inline void AddDeltaVelocity(const glm::vec2& deltaVelocity) { m_Velocity += deltaVelocity; }
+	inline glm::vec2 GetVelocity() const { return m_Velocity; }
+
+	inline void SetForce(const glm::vec2& newForce) { m_Force = newForce; }
+	inline glm::vec2 GetForce() const { return m_Force; }
 
 	inline float GetRadius() const { return m_fRadius; }
+
+	inline float GetSPHDensity() const { return m_fSPHDensity; }
+	inline void SetSPHDensity(float newDensity) { m_fSPHDensity = newDensity; }
+
+	inline float GetLambda() const { return m_fLambda; }
+	inline void SetLambda(float newLambda) { m_fLambda = newLambda; }
+
+	inline float GetDensityConstraint() const { return m_fDensityConstraint; }
+	inline void SetDensityConstraint(float newDensityConstraint) { m_fDensityConstraint = newDensityConstraint; }
 
 	inline bool IsAtLimit()
 	{
@@ -45,8 +64,9 @@ public:
 		return radiusSum * radiusSum > (fDx * fDx) + (fDy * fDy);
 	}
 
-	inline void SetIsColliding() { m_Shape.setFillColor(sf::Color::Red); }
-	inline void SetAsNeighbor() { m_Shape.setFillColor(sf::Color::Magenta); }
+	inline void SetDefaultColor() { m_Shape.setFillColor(sf::Color::Blue); }
+	inline void SetIsCollidingColor() { m_Shape.setFillColor(sf::Color::Red); }
+	inline void SetAsNeighborColor() { m_Shape.setFillColor(sf::Color::Magenta); }
 
 	inline int GetParticleIndex() const { return m_iParticleIndex; }
 
@@ -65,17 +85,19 @@ private:
 	sf::CircleShape m_Shape;
 	float m_fRadius;
 
-	sf::Vector2f m_Position;
-	sf::Vector2f m_LocalPosition;
-	sf::Vector2f m_PredictedPosition;
-	sf::Vector2f m_Velocity;
-	sf::Vector2f m_Force;
+	glm::vec2 m_LocalPosition;
+	glm::vec2 m_Position;
+	glm::vec2 m_PredictedPosition;
+	glm::vec2 m_PositionCorrection;
+	glm::vec2 m_Velocity;
+	glm::vec2 m_Force;
+	float m_fSPHDensity;
+	float m_fDensityConstraint;
 	float m_fMass;
 	float m_fInvMass;
 
-	void UpdateExternalForces(float dt);
-	void DampVelocity();
-	void CalculatePredictedPosition(float dt);
+	// Position based fluid
+	float m_fLambda;
 };
 
 #endif // PARTICLE_H
